@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:padding="1dip" >
+
+    <FrameLayout
+        android:id="@+id/sp_wv"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_toLeftOf="@+id/sp_layout_right"
+        android:background="#77FFFFFF" >
+    </FrameLayout>
+
+    <LinearLayout
+        android:id="@+id/sp_layout_right"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true"
+        android:orientation="vertical" >
+
+        <TextView
+            android:id="@+id/sp_btn_commit"
+            style="@style/SignBtnText"
+            android:text="@string/commit" />
+
+        <TextView
+            android:id="@+id/sp_btn_resign"
+            style="@style/SignBtnText"
+            android:layout_marginBottom="4dp"
+            android:layout_marginTop="4dp"
+            android:text="@string/resign" />
+
+        <TextView
+            android:id="@+id/sp_btn_zoom"
+            style="@style/SignBtnText"
+            android:text="@string/zoom_big" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/text_sign_note"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_margin="2dp"
+        android:layout_toLeftOf="@id/sp_layout_right"
+        android:gravity="center"
+        android:hint="@string/sign_name_note"
+        android:textColor="#ACACAC"
+        android:textSize="20sp" />
+
+</RelativeLayout>
