@@ -6,6 +6,7 @@ import android.app.Dialog;
 import android.content.Context;
 import android.graphics.Color;
 import android.graphics.PixelFormat;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Environment;
 import android.util.Log;
 import android.view.Gravity;
@@ -34,6 +35,8 @@ public class SignNameDialog extends Dialog {
 	private SignaturePad mSlate;
 
 	private SignPDF signPDF;
+	
+	private FrameLayout parent;
 	public SignNameDialog(Context context) {
 		super(context);
 	}
@@ -47,21 +50,25 @@ public class SignNameDialog extends Dialog {
 			int height) {
 		super(context,R.style.dialogStyle);
 		requestWindowFeature(Window.FEATURE_NO_TITLE);
-		//FrameLayout dialogView = new FrameLayout(context);
-		//LayoutParams pa = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
-		//dialogView.setLayoutParams(pa);
-		
+		parent = new FrameLayout(context);
+		LayoutParams pa = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
+		parent.setLayoutParams(pa);
+	
 		mSlate = new SignaturePad(context);
+		//mSlate.setBackgroundColor(Color.parseColor("#7E7EEEEE"));
 		if (width < 350) {
 			width = 350;
 		}
 		if (height < 200) {
 			height = 200;
 		}
-		mSlate.setBackgroundColor(Color.parseColor("#00FFFFFF"));
-		setContentView(mSlate);
+	
+		setContentView(parent);
+		parent.addView(mSlate);
 		//dialogView.addView(mSlate);
 		Window dialogWindow = getWindow();
+		String coloString = Setting.instance().getData(Setting.KEY_BG_COLOR, "#78EDEDED");
+		dialogWindow.setBackgroundDrawable(new ColorDrawable(Color.parseColor(coloString)));
 		WindowManager.LayoutParams lp = dialogWindow.getAttributes();
 		lp.type = WindowManager.LayoutParams.TYPE_TOAST;
 		lp.flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
@@ -71,7 +78,6 @@ public class SignNameDialog extends Dialog {
 		lp.height = height; // 锟竭讹拷
 		lp.x = x_point;
 		lp.y = y_point;
-		lp.format = PixelFormat.TRANSLUCENT;
 		dialogWindow.setAttributes(lp);
 		setCanceledOnTouchOutside(false);
 	}
@@ -82,7 +88,7 @@ public class SignNameDialog extends Dialog {
 
 	public void setSignBackgroudColor(int color) throws RuntimeException {
 
-		mSlate.setBackgroundColor(color);
+		getWindow().setBackgroundDrawable(new ColorDrawable(color));
 	}
 
 	public void setPenColor(int color) throws RuntimeException {
@@ -109,7 +115,9 @@ public class SignNameDialog extends Dialog {
 		lp.x = x_point;
 		lp.y = y_point;
 		dialogWindow.setAttributes(lp);
-		mSlate.clear();
+		Log.e(TAG, "update .... ");
+		mSlate.updateWidth(width, height);
+		
 	}
 
 	public void updateDialogSign(SignBoardInfo signInfo) {
@@ -121,14 +129,15 @@ public class SignNameDialog extends Dialog {
 	@Override
 	public void show() {
 		super.show();
-
+		
+		Log.e(TAG, "view width = "+mSlate.getWidth()+", height = "+mSlate.getHeight());
+		Log.e(TAG, "view width = "+mSlate.getMeasuredWidth()+", height = "+mSlate.getMeasuredHeight());
 	}
 
 	@Override
 	public void dismiss() {
 		super.dismiss();
 		Log.e("", "dialog  dismis");
-		clear();
 	}
 	
 	public String saveSignPic() throws Exception{
@@ -149,7 +158,11 @@ public class SignNameDialog extends Dialog {
 	public String sign (String pdfPath,String pngPath) throws Exception{
 		if (signPDF != null){
 			PDFCenter.signInPDF(pdfPath, signPDF.getPageNum(), 
-					(float) signPDF.getPointX(),(float) signPDF.getPointY(), pngPath);
+					(float) signPDF.getPointX(),
+					(float) signPDF.getPointY(),
+					pngPath,
+					(float) signPDF.getWidth(),
+					(float) signPDF.getHeight());
 		}
 		return pdfPath;
 	}

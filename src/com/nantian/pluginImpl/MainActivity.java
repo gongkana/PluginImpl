@@ -1,6 +1,9 @@
 package com.nantian.pluginImpl;
 
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import android.app.Activity;
 import android.graphics.Color;
 import android.os.Bundle;
@@ -40,31 +43,57 @@ public class MainActivity extends Activity {
         edit = (EditText) findViewById(R.id.editText);
         pluginHandler = new PluginHandler();
    
-
-     
         pluginHandler.setContext(this);
+        //dialog = new SignNameDialog(this,20,100,300,400);
+        
         
         findViewById(R.id.action).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-            	/**
+         
             	try {
             		
             	JSONObject json = new JSONObject(edit.getText().toString());
-            	String tag = json.optString("cmd");
-            	String data = json.optString("data","{}");
-                
-					pluginHandler.execute(tag,new JSONObject(data));
+            	final String tag = json.optString("cmd");
+            	final String data = json.optString("data","{}");
+                new Thread(){
+                	public void run() {
+                		try {
+							pluginHandler.execute(tag,new JSONObject(data));
+						} catch (JSONException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+                	};
+                }.start();
+					
 				} catch (JSONException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-				*/
-            	
-            	dialog.show();
+			
+    
+            
             }
         });
 
+
+    }
+    @Override
+    public void onBackPressed() {
+    	// TODO Auto-generated method stub
+    	super.onBackPressed();
+    	JSONObject json;
+		try {
+			json = new JSONObject("{\"cmd\":\"dismissSign\",\"fileName\":\"ImplPlugin.apk\"}");
+	    	String tag = json.optString("cmd");
+	    	String data = json.optString("data","{}");
+	        
+				pluginHandler.execute(tag,new JSONObject(data));
+		} catch (JSONException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 
     }
 }

@@ -101,6 +101,7 @@ public class UIManager {
 						try {
 							String png = signDialog.saveSignPic();
 							signDialog.sign((String) msg.obj, png);
+							signDialog.dismiss();
 						} catch (Exception e) {
 							// TODO Auto-generated catch block
 							e.printStackTrace();

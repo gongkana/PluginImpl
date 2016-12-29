@@ -127,6 +127,7 @@ public class SignaturePad extends View {
 
 
     public void clear() {
+    	Log.e("", "clear ................. ");
         mSvgBuilder.clear();
         mPoints .clear();
         mLastVelocity = 0;
@@ -475,6 +476,12 @@ public class SignaturePad extends View {
         mPaint.setStrokeWidth(originalWidth);
     }
 
+    @Override
+    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+    	// TODO Auto-generated method stub
+    	super.onSizeChanged(w, h, oldw, oldh);
+    	Log.e("", "w = "+ w +",h = "+ h+",old = "+oldw+",oldh = "+oldh);
+    }
     private ControlTimedPoints calculateCurveControlPoints(TimedPoint s1, TimedPoint s2, TimedPoint s3) {
         float dx1 = s1.x - s2.x;
         float dy1 = s1.y - s2.y;
@@ -538,7 +545,18 @@ public class SignaturePad extends View {
         mDirtyRect.bottom = Math.max(mLastTouchY, eventY);
     }
 
-
+    public void updateWidth(int width ,int height){
+        mSvgBuilder.clear();
+        mPoints .clear();
+        mLastVelocity = 0;
+        if (mSignatureBitmap != null) {
+        	mSignatureBitmap = null;
+        }
+        mSignatureBitmap = Bitmap.createBitmap(width, height,
+                Bitmap.Config.ARGB_8888);
+        mSignatureBitmapCanvas = new Canvas(mSignatureBitmap);
+        invalidate();
+    }
     private void ensureSignatureBitmap() {
         if (mSignatureBitmap == null) {
             mSignatureBitmap = Bitmap.createBitmap(getWidth(), getHeight(),

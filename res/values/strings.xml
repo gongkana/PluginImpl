@@ -4,7 +4,7 @@
     <string name="app_name">Plugin</string>
     <string name="action_settings">Settings</string>
     <string name="hello_world">Hello world!</string>
-<string name="json">{"cmd":"showSign","fileName":"paperlessPlugin.jar","data":{"signPage":"1","width":"300","height":"250","pointX":"150","pointY":"150"}}</string>
+<string name="json">{"cmd":"showSign","fileName":"ImplPlugin.apk","data":{"signPage":"1","width":"300","height":"250","pointX":"150","pointY":"150"}}</string>
     <string name="clear">取消</string>
     <string name="resign">重签</string>
     <string name="sign_ok">确定</string>

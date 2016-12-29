@@ -4,6 +4,7 @@ import java.io.File;
 
 import android.content.Context;
 import android.os.Environment;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.van.uart.VanKeyboard;
@@ -12,6 +13,7 @@ import com.nantian.entity.SignBoardInfo;
 import com.nantian.entity.SignPDF;
 import com.nantian.plugininterface.IData;
 import com.nantian.plugininterface.IPluginInterface;
+import com.nantian.sign.PDFCenter;
 import com.nantian.utils.Setting;
 import com.nantian.utils.StringUtil;
 import com.nantian.utils.Utils;
@@ -178,6 +180,17 @@ public class PluginHandler implements IPluginInterface,
 					signPDF.setPointY(pa.optDouble("pointY"));
 					signPDF.setPageNum(pa.optInt("pageNum"));
 					String pdfName  = pa.optString("signFilePath");
+					if(TextUtils.isEmpty(pdfName)){
+						String signString = pa.optString("signFileString");
+						if (!TextUtils.isEmpty(signString)){
+							pdfName = "sign.pdf";
+							if (!PDFCenter.createPDF(pa.optString("signFileString")
+									,Environment.getExternalStorageDirectory()+"/Nantian/Temp"+File.separator+pdfName )){
+								pdfName = "";
+							}
+						}
+					}
+					
 					uiManamger.setSignPdf(signPDF);
 					uiManamger.saveBitmapAndSign(Environment.getExternalStorageDirectory()+"/Nantian/Temp"+File.separator+pdfName);
 					
