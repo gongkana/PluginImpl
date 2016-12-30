@@ -34,9 +34,12 @@ public class SignNameDialog extends Dialog {
 
 	private SignaturePad mSlate;
 
-	private SignPDF signPDF;
 	
 	private FrameLayout parent;
+	
+	private StringBuilder tracker;
+	
+	
 	public SignNameDialog(Context context) {
 		super(context);
 	}
@@ -123,7 +126,7 @@ public class SignNameDialog extends Dialog {
 	public void updateDialogSign(SignBoardInfo signInfo) {
 		updateDialogSign(signInfo.getSign_x(), signInfo.getSing_y(),
 				signInfo.getWidth(), signInfo.getHeigth());
-		this.signInfo = signInfo;
+		this.setSignInfo(signInfo);
 	}
 
 	@Override
@@ -146,24 +149,24 @@ public class SignNameDialog extends Dialog {
 		return dir.getAbsolutePath()+File.separator+SIGN_PICTURE_NAME;
 	}
 	
+
+
+
+
+	
+	public String sign (SignPDF signPdf,String pngPath) throws Exception{
+		if (signPdf != null){
+			PDFCenter.sign(pngPath, signPdf);
+			return signPdf.getPdfPath();
+		}
+		return "";
+	}
+
 	public SignBoardInfo getSignInfo() {
 		return signInfo;
 	}
 
-
-	public void setSignPDF(SignPDF signPDF) {
-		this.signPDF = signPDF;
-	}
-	
-	public String sign (String pdfPath,String pngPath) throws Exception{
-		if (signPDF != null){
-			PDFCenter.signInPDF(pdfPath, signPDF.getPageNum(), 
-					(float) signPDF.getPointX(),
-					(float) signPDF.getPointY(),
-					pngPath,
-					(float) signPDF.getWidth(),
-					(float) signPDF.getHeight());
-		}
-		return pdfPath;
+	public void setSignInfo(SignBoardInfo signInfo) {
+		this.signInfo = signInfo;
 	}
 }

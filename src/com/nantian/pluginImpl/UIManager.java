@@ -100,7 +100,7 @@ public class UIManager {
 					if (signDialog != null) {
 						try {
 							String png = signDialog.saveSignPic();
-							signDialog.sign((String) msg.obj, png);
+							signDialog.sign((SignPDF) msg.obj,png);
 							signDialog.dismiss();
 						} catch (Exception e) {
 							// TODO Auto-generated catch block
@@ -171,16 +171,10 @@ public class UIManager {
 		msg.what = SAVE_BITMAP;
 		handler.sendMessage(msg);
 	}
-	public void saveBitmapAndSign(String pdfPath) {
+	public void saveBitmapAndSign(SignPDF signPDF) {
 		Message msg = Message.obtain();
 		msg.what = SAVE_BITMAP_AND_SIGN;
-		msg.obj = pdfPath;
+		msg.obj = signPDF;
 		handler.sendMessage(msg);
-	}
-	public void setSignPdf(SignPDF signPDF){
-		if (signDialog != null){
-			signDialog.setSignPDF(signPDF);
-		}
-		
 	}
 }
