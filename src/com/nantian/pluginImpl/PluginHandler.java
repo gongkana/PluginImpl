@@ -174,14 +174,14 @@ public class PluginHandler implements IPluginInterface,
 			}else if ("signInPoint".equals(s)) {
 				if (null != uiManamger){
 					SignPDF signPDF = new SignPDF();
-					//signPDF.setHeight(pa.optDouble("height"));
-					//signPDF.setWidth(pa.optDouble("width"));
-					//signPDF.setPointX(pa.optDouble("pointX"));
-					//signPDF.setPointY(pa.optDouble("pointY"));
-					signPDF.setHeight(100);
-					signPDF.setWidth(500);
-					signPDF.setPointX(0);
-					signPDF.setPointY(400);
+					signPDF.setHeight(pa.optDouble("height"));
+					signPDF.setWidth(pa.optDouble("width"));
+					signPDF.setPointX(pa.optDouble("pointX"));
+					signPDF.setPointY(pa.optDouble("pointY"));
+					//signPDF.setHeight(100);
+					//signPDF.setWidth(500);
+					//signPDF.setPointX(0);
+					//signPDF.setPointY(400);
 					signPDF.setPageNum(pa.optInt("pageNum"));
 					String pdfName  = pa.optString("signFilePath");
 					if(TextUtils.isEmpty(pdfName)){

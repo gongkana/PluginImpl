@@ -16,11 +16,9 @@ import java.security.cert.Certificate;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
-import android.R.raw;
-import android.os.Environment;
-import android.text.TextUtils;
 import android.util.Log;
 
+import com.itextpdf.awt.geom.Rectangle2D;
 import com.itextpdf.text.BaseColor;
 import com.itextpdf.text.Document;
 import com.itextpdf.text.DocumentException;
@@ -30,11 +28,14 @@ import com.itextpdf.text.FontProvider;
 import com.itextpdf.text.Image;
 import com.itextpdf.text.Rectangle;
 import com.itextpdf.text.pdf.BaseFont;
-import com.itextpdf.text.pdf.PdfContentByte;
 import com.itextpdf.text.pdf.PdfReader;
 import com.itextpdf.text.pdf.PdfSignatureAppearance;
 import com.itextpdf.text.pdf.PdfStamper;
 import com.itextpdf.text.pdf.PdfWriter;
+import com.itextpdf.text.pdf.parser.ImageRenderInfo;
+import com.itextpdf.text.pdf.parser.PdfReaderContentParser;
+import com.itextpdf.text.pdf.parser.RenderListener;
+import com.itextpdf.text.pdf.parser.TextRenderInfo;
 import com.itextpdf.text.pdf.security.BouncyCastleDigest;
 import com.itextpdf.text.pdf.security.DigestAlgorithms;
 import com.itextpdf.text.pdf.security.ExternalDigest;
@@ -48,7 +49,8 @@ public class PDFCenter {
 	public static boolean createPDF(String rawHTML, String fileName) {
 
 		File file = new File(fileName);
-				
+		Log.e("","fileName = "+fileName);
+		showLogCompletion(rawHTML, 1000);
 		try {
 			if (file.exists()) {
 				file.delete();
@@ -68,12 +70,10 @@ public class PDFCenter {
 					document,
 					inputStream,
 					null,
-					Charset.defaultCharset(),
-					new MyFont());
+					Charset.defaultCharset(),new MyFont());
 
 			document.close();
 			return true;
-
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 			return false;
@@ -86,10 +86,25 @@ public class PDFCenter {
 		}
 	}
 
-
+    public static void showLogCompletion(String log,int showCount){  
+        if(log.length() >showCount){  
+            String show = log.substring(0, showCount);  
+            Log.i("TAG", show+"");  
+            if((log.length() - showCount)>showCount){//剩下的文本还是大于规定长度  
+                String partLog = log.substring(showCount,log.length());  
+                showLogCompletion(partLog, showCount);  
+            }else{  
+                String surplusLog = log.substring(showCount, log.length());  
+                Log.i("TAG", surplusLog+"");  
+            }  
+              
+        }else{  
+            Log.i("TAG", log+"");  
+        }  
+    }  
 
 	public static class MyFont implements FontProvider {
-		private static final String FONT_PATH = "/system/fonts/DroidSansFallback.ttf";
+		private static final String FONT_PATH = "/system/fonts/songti.ttf";
 
 		private static final String FONT_ALIAS = "my_font";
 
@@ -139,7 +154,13 @@ public class PDFCenter {
         BouncyCastleProvider provider = new BouncyCastleProvider();
         Security.addProvider(provider);
         // Creating the reader and the stamper
+        Log.e("", signInfo.toString());
         PdfReader reader = new PdfReader(signInfo.getPdfPath());
+        
+        
+        Rectangle pageSize = reader.getPageSize(signInfo.getPageNum());
+        float width = pageSize.getWidth();
+        float height = pageSize.getHeight();
         String tempPath = signInfo.getPdfPath().replace(".", "_new.");
         FileOutputStream os = new FileOutputStream(tempPath);
         PdfStamper stamper = PdfStamper.createSignature(reader, os, '\0');
@@ -150,12 +171,14 @@ public class PDFCenter {
         Image img = Image.getInstance(markImagePath);
         Log.e("", "markImagePath...");
         Log.e("", signInfo.toString());
+        float[] start = getKeyWords(reader, signInfo.getPageNum());
+        Log.e("", "x=="+start[0]+"---y=="+start[1]);
         appearance.setVisibleSignature(
         		new Rectangle(
-        				(float) signInfo.getPointX(),
-        				(float) signInfo.getPointY(),
-        				(float) (signInfo.getPointX()+signInfo.getWidth()),
-        				(float) (signInfo.getPointY()+signInfo.getHeight())),signInfo.getPageNum(),"Signature1");
+        				(float) start[0],
+        				(float) (start[1]-signInfo.getHeight()*0.75f),
+        				(float) (start[0]+signInfo.getWidth()*0.75f),
+        				(float) (start[1])),signInfo.getPageNum(),"Signature1");
         // Custom text and background image
         appearance.setLayer2Text("");
         appearance.setImage(img);
@@ -168,5 +191,52 @@ public class PDFCenter {
         srcFile.delete();
         File desFile = new File(tempPath);
         desFile.renameTo(srcFile);
+    }
+    
+    private static float[] getKeyWords(PdfReader pdfReader,int num) {
+        final float[] resu = new float[2];
+        try {
+            PdfReaderContentParser pdfReaderContentParser = new PdfReaderContentParser(
+                    pdfReader);
+
+            pdfReaderContentParser.processContent(num, new RenderListener() {
+                @Override
+                public void renderText(TextRenderInfo textRenderInfo) {
+                    String text = textRenderInfo.getText(); // 整页内容
+
+                    if (null != text && text.contains("sign")) {
+                        Rectangle2D.Float boundingRectange = textRenderInfo
+                                .getBaseline().getBoundingRectange();
+
+
+                        resu[0] = boundingRectange.x;
+                        resu[1] = boundingRectange.y;
+                    }
+                }
+
+                @Override
+                public void renderImage(ImageRenderInfo arg0) {
+                    // TODO Auto-generated method stub
+
+                }
+
+                @Override
+                public void endTextBlock() {
+                    // TODO Auto-generated method stub
+
+                }
+
+                @Override
+                public void beginTextBlock() {
+                    // TODO Auto-generated method stub
+
+                }
+            });
+
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        return resu;
     }
 }
