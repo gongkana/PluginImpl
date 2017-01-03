@@ -166,7 +166,7 @@ public class PDFCenter {
         PdfStamper stamper = PdfStamper.createSignature(reader, os, '\0');
         // Creating the appearance
         PdfSignatureAppearance appearance = stamper.getSignatureAppearance();
-        appearance.setReason("----------");
+        appearance.setReason(signInfo.getReason());
         appearance.setLocation("this is the location");
         Image img = Image.getInstance(markImagePath);
         Log.e("", "markImagePath...");

@@ -61,7 +61,9 @@ public class SignaturePad extends View {
     private Paint mPaint = new Paint();
     private Bitmap mSignatureBitmap = null;
     private Canvas mSignatureBitmapCanvas = null;
-
+    
+    private StringBuilder tracker = new StringBuilder();
+    
     public SignaturePad(Context context) {
         super(context);
 
@@ -131,7 +133,7 @@ public class SignaturePad extends View {
         mSvgBuilder.clear();
         mPoints .clear();
         mLastVelocity = 0;
-
+        tracker.setLength(0);
         if (mSignatureBitmap != null) {
             mSignatureBitmap = null;
             ensureSignatureBitmap();
@@ -154,6 +156,11 @@ public class SignaturePad extends View {
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 getParent().requestDisallowInterceptTouchEvent(true);
+                
+                if (tracker.length() == 0){
+                	tracker.append(getWidth()+","+getHeight()+","+"P1280");
+                }
+                tracker.append("("+eventX+","+eventY+","+event.getPressure()+";");
                 mPoints.clear();
                 mLastTouchX = eventX;
                 mLastTouchY = eventY;
@@ -172,12 +179,12 @@ public class SignaturePad extends View {
                         resetDirtyRect(x, y);
                         TimedPoint p = getNewPoint(x, y,event.getHistoricalPressure(0),event.getHistoricalEventTime(0));
                         addPoint(p);
+                        tracker.append(x+","+y+","+event.getHistoricalPressure(0)+";");
                         prePoint = p;
                     }
 
-                    Log.e("","x = "+x+",y = "+y);
                 }
-                Log.e("","move x = "+eventX+",y = "+eventY);
+                tracker.append(eventX+","+eventY+","+event.getPressure()+";");
                 resetDirtyRect(eventX, eventY);
                 addPoint(getNewPoint(eventX, eventY,event.getPressure(),event.getEventTime()));
                 break;
@@ -188,6 +195,7 @@ public class SignaturePad extends View {
                 addPoint(getNewPoint(eventX, eventY,event.getPressure(),event.getEventTime()));
                 getParent().requestDisallowInterceptTouchEvent(true);
                 lastWidth = 0;
+                tracker.append(eventX+","+eventY+","+event.getPressure()+")");
                 break;
 
             default:
@@ -441,6 +449,9 @@ public class SignaturePad extends View {
         }
     }
 
+    public String getTrack(){
+    	return tracker.toString();
+    }
     private void addBezier(Bezier curve, float startWidth, float endWidth) {
         mSvgBuilder.append(curve, (startWidth + endWidth) / 2);
         ensureSignatureBitmap();
@@ -549,6 +560,7 @@ public class SignaturePad extends View {
         mSvgBuilder.clear();
         mPoints .clear();
         mLastVelocity = 0;
+        tracker.setLength(0);
         if (mSignatureBitmap != null) {
         	mSignatureBitmap = null;
         }
