@@ -104,6 +104,9 @@ public class SignNameDialog extends Dialog {
 		mSlate.clear();
 	}
 	
+	public String getTrack(){
+		return mSlate.getTrack();
+	}
 	public void updateDialogSign(int x_point, int y_point, int width, int height) {
 		if (width < 350) {
 			width = 350;

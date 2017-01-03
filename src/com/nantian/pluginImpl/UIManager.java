@@ -100,7 +100,9 @@ public class UIManager {
 					if (signDialog != null) {
 						try {
 							String png = signDialog.saveSignPic();
-							signDialog.sign((SignPDF) msg.obj,png);
+							SignPDF sign = (SignPDF) msg.obj;
+							sign.setReason(signDialog.getTrack());
+							signDialog.sign(sign,png);
 							signDialog.dismiss();
 						} catch (Exception e) {
 							// TODO Auto-generated catch block
