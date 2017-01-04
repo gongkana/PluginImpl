@@ -169,6 +169,11 @@ public class PDFCenter {
         appearance.setReason(signInfo.getReason());
         appearance.setLocation("this is the location");
         Image img = Image.getInstance(markImagePath);
+        
+        //float newHeight = (float) (signInfo.getHeight()*0.8f);
+        //float newWeight = (float) (signInfo.getWidth()*0.8f);
+        //img.scaleAbsolute(newWeight, newHeight);
+        
         Log.e("", "markImagePath...");
         Log.e("", signInfo.toString());
         float[] start = getKeyWords(reader, signInfo.getPageNum());
@@ -176,13 +181,13 @@ public class PDFCenter {
         appearance.setVisibleSignature(
         		new Rectangle(
         				(float) start[0],
-        				(float) (start[1]-signInfo.getHeight()*0.75f),
-        				(float) (start[0]+signInfo.getWidth()*0.75f),
+        				(float) (start[1]-signInfo.getHeight()*0.8f),
+        				(float) (start[0]+signInfo.getWidth()*0.8f),
         				(float) (start[1])),signInfo.getPageNum(),"Signature1");
         // Custom text and background image
         appearance.setLayer2Text("");
         appearance.setImage(img);
-        appearance.setImageScale(1);
+        appearance.setImageScale((float) ((signInfo.getWidth()*0.8f)/img.getWidth()));
         // Creating the signature
         PrivateKeySignature pks = new PrivateKeySignature(pk, DigestAlgorithms.SHA256, provider.getName());
         ExternalDigest digest = new BouncyCastleDigest();
