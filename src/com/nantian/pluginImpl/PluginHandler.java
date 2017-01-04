@@ -7,10 +7,10 @@ import android.os.Environment;
 import android.text.TextUtils;
 import android.util.Log;
 
-import com.van.uart.VanKeyboard;
 import com.iflytek.tts.TtsService.Tts;
 import com.nantian.entity.SignBoardInfo;
 import com.nantian.entity.SignPDF;
+import com.nantian.plugininterface.AbsKeyboard;
 import com.nantian.plugininterface.IData;
 import com.nantian.plugininterface.IPluginInterface;
 import com.nantian.sign.PDFCenter;
@@ -25,8 +25,8 @@ import org.json.JSONObject;
  * Created by gongkan on 2016/12/8.
  */
 
-public class PluginHandler implements IPluginInterface,
-		VanKeyboard.OnClickListener {
+public class PluginHandler implements IPluginInterface,AbsKeyboard.OnkeyListener
+		 {
 
 	private static final String TAG = "PluginHandler";
 
@@ -34,12 +34,13 @@ public class PluginHandler implements IPluginInterface,
 
 	private Context mContext;
 
-	private VanKeyboard keyboardManager;
+	private AbsKeyboard keyboardManager;
 
+	
 	private UIManager uiManamger;
+	
 	public PluginHandler() {
-		keyboardManager = new VanKeyboard();
-		keyboardManager.setOnClickListener(this);
+
 	}
 
 	@Override
@@ -245,8 +246,7 @@ public class PluginHandler implements IPluginInterface,
 	}
 
 	private void openKeybord(int mode) {
-		keyboardManager.requestOpenKeyboard();
-		keyboardManager.openKeyboard();
+		keyboardManager.openKeyboard(mode);
 	}
 
 	private void closeKeybord() {
@@ -300,6 +300,12 @@ public class PluginHandler implements IPluginInterface,
 			}
 		}
 
+	}
+
+	@Override
+	public void initKeyboard(AbsKeyboard arg0) {
+		keyboardManager = arg0;
+		keyboardManager.setOnkeyListener(this);	
 	}
 
 }
