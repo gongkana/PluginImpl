@@ -2,6 +2,7 @@ package com.nantian.utils;
 
 import android.annotation.SuppressLint;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.Xml;
 
 import java.io.StringWriter;
@@ -33,6 +34,7 @@ public class StringUtil {
 	public static byte[] hexStringToBytes(String hexString) {
 		if (hexString == null || hexString.equals("")
 				|| 0 != (hexString.length() % 2)) {
+			Log.e("", "is null string = "+hexString);
 			return null;
 		}
 

@@ -92,13 +92,16 @@ public class DESUtils {
 		byte [] ac = new byte [length];
 		byte [] pa = new byte [length];
 		byte [] dst = new byte [length];
-		
+		String newPass = pass;
+	 	if (pass.length()%2 != 0){
+	 		newPass = pass+"F";
+	 	}
 		byte [] acSrc = StringUtil.hexStringToBytes(account);
 		int acstart = 8-acSrc.length%8;
 		if (acSrc.length>length){
 			acstart = 0;
 		}
-		byte [] psSrc = StringUtil.hexStringToBytes(pass);
+		byte [] psSrc = StringUtil.hexStringToBytes(newPass);
 		int srcLen = acSrc.length>length?length:acSrc.length;
 		int passLen = psSrc.length>length?length:psSrc.length;
 		System.arraycopy(acSrc, 0, ac, acstart, srcLen);

@@ -173,10 +173,19 @@ public class UIManager {
 		msg.what = SAVE_BITMAP;
 		handler.sendMessage(msg);
 	}
-	public void saveBitmapAndSign(SignPDF signPDF) {
-		Message msg = Message.obtain();
-		msg.what = SAVE_BITMAP_AND_SIGN;
-		msg.obj = signPDF;
-		handler.sendMessage(msg);
+	public void saveBitmapAndSign(SignPDF signPDF) throws Exception {
+		//Message msg = Message.obtain();
+		//msg.what = SAVE_BITMAP_AND_SIGN;
+		//msg.obj = signPDF;
+		//handler.sendMessage(msg);
+		if (signDialog != null) {
+
+				String png = signDialog.saveSignPic();
+
+				signPDF.setReason(signDialog.getTrack());
+				signDialog.sign(signPDF,png);
+				signDialog.dismiss();
+
+		}
 	}
 }
