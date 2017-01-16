@@ -16,8 +16,6 @@ import java.security.cert.Certificate;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
-import android.util.Log;
-
 import com.itextpdf.awt.geom.Rectangle2D;
 import com.itextpdf.text.BaseColor;
 import com.itextpdf.text.Document;
@@ -43,13 +41,14 @@ import com.itextpdf.text.pdf.security.MakeSignature;
 import com.itextpdf.text.pdf.security.PrivateKeySignature;
 import com.itextpdf.tool.xml.XMLWorkerHelper;
 import com.nantian.entity.SignPDF;
+import com.nantian.utils.HLog;
 
 public class PDFCenter {
 
 	public static boolean createPDF(String rawHTML, String fileName) {
 
 		File file = new File(fileName);
-		Log.e("","fileName = "+fileName);
+		HLog.e("","fileName = "+fileName);
 		showLogCompletion(rawHTML, 1000);
 		try {
 			if (file.exists()) {
@@ -89,17 +88,17 @@ public class PDFCenter {
     public static void showLogCompletion(String log,int showCount){  
         if(log.length() >showCount){  
             String show = log.substring(0, showCount);  
-            Log.i("TAG", show+"");  
+            HLog.i("TAG", show+"");  
             if((log.length() - showCount)>showCount){//剩下的文本还是大于规定长度  
                 String partLog = log.substring(showCount,log.length());  
                 showLogCompletion(partLog, showCount);  
             }else{  
                 String surplusLog = log.substring(showCount, log.length());  
-                Log.i("TAG", surplusLog+"");  
+                HLog.i("TAG", surplusLog+"");  
             }  
               
         }else{  
-            Log.i("TAG", log+"");  
+            HLog.i("TAG", log+"");  
         }  
     }  
 
@@ -154,7 +153,7 @@ public class PDFCenter {
         BouncyCastleProvider provider = new BouncyCastleProvider();
         Security.addProvider(provider);
         // Creating the reader and the stamper
-        Log.e("", signInfo.toString());
+        HLog.e("", signInfo.toString());
         PdfReader reader = new PdfReader(signInfo.getPdfPath());
         
         
@@ -174,10 +173,10 @@ public class PDFCenter {
         //float newWeight = (float) (signInfo.getWidth()*0.8f);
         //img.scaleAbsolute(newWeight, newHeight);
         
-        Log.e("", "markImagePath...");
-        Log.e("", signInfo.toString());
+        HLog.e("", "markImagePath...");
+        HLog.e("", signInfo.toString());
         float[] start = getKeyWords(reader, signInfo.getPageNum());
-        Log.e("", "x=="+start[0]+"---y=="+start[1]);
+        HLog.e("", "x=="+start[0]+"---y=="+start[1]);
         appearance.setVisibleSignature(
         		new Rectangle(
         				(float) start[0],

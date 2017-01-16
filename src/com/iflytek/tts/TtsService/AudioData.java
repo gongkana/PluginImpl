@@ -3,7 +3,10 @@ package com.iflytek.tts.TtsService;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
-import android.util.Log;
+
+
+import com.nantian.utils.HLog;
+
 
 public class AudioData {
 	private static AudioTrack mAudio = null;
@@ -16,7 +19,7 @@ public class AudioData {
 		mAudio = new AudioTrack(mStreamType, mSampleRate,
 				AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT,
 				mBuffSize, AudioTrack.MODE_STREAM);
-		Log.d(TAG, " AudioTrack create ok");
+		HLog.d(TAG, " AudioTrack create ok");
 	}
 
 	/**
@@ -25,12 +28,12 @@ public class AudioData {
 	public static void onJniOutData(int len, byte[] data) {
 
 		if (null == mAudio) {
-			Log.e(TAG, " mAudio null");
+			HLog.e(TAG, " mAudio null");
 			return;
 		}
 
 		if (mAudio.getState() != AudioTrack.STATE_INITIALIZED) {
-			Log.e(TAG, " mAudio STATE_INITIALIZED");
+			HLog.e(TAG, " mAudio STATE_INITIALIZED");
 			return;
 		}
 
@@ -38,7 +41,7 @@ public class AudioData {
 			mAudio.write(data, 0, len);
 			mAudio.play();
 		} catch (Exception e) {
-			Log.e(TAG, e.toString());
+			HLog.e(TAG, e.toString());
 		}
 	}
 
@@ -48,7 +51,7 @@ public class AudioData {
 	 * @param nProcBegin
 	 */
 	public static void onJniWatchCB(int nProcBegin) {
-		Log.d(TAG, "onJniWatchCB  process begin = " + nProcBegin);
+		HLog.d(TAG, "onJniWatchCB  process begin = " + nProcBegin);
 	}
 	
 	public static void stop() {

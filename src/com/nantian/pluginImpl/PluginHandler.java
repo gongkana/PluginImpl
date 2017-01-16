@@ -2,10 +2,12 @@ package com.nantian.pluginImpl;
 
 import java.io.File;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import android.content.Context;
 import android.os.Environment;
 import android.text.TextUtils;
-import android.util.Log;
 
 import com.iflytek.tts.TtsService.Tts;
 import com.nantian.entity.SignBoardInfo;
@@ -14,12 +16,10 @@ import com.nantian.plugininterface.AbsKeyboard;
 import com.nantian.plugininterface.IData;
 import com.nantian.plugininterface.IPluginInterface;
 import com.nantian.sign.PDFCenter;
+import com.nantian.utils.HLog;
 import com.nantian.utils.Setting;
 import com.nantian.utils.StringUtil;
 import com.nantian.utils.Utils;
-
-import org.json.JSONException;
-import org.json.JSONObject;
 
 /**
  * Created by gongkan on 2016/12/8.
@@ -49,10 +49,10 @@ public class PluginHandler implements IPluginInterface,AbsKeyboard.OnkeyListener
 		try {
 			json.put("cmd", s);
 			json.put("result", "0");
-			Log.e("", "zai -- 新插件啦 33 ,execute:" + s);
-			Log.e("", "I am in plugin 1 ,execute:" + s);
+			HLog.e("", "zai -- 新插件啦 33 ,execute:" + s);
+			HLog.e("", "I am in plugin 1 ,execute:" + s);
 			if ("openKeyboard".equalsIgnoreCase(s)) {
-				Log.e("", "open Keyboard begin !");
+				HLog.e("", "open Keyboard begin !");
 				int type = pa.optInt("type", 0);
 				openKeybord(type);
 				json.put("result", "0");
@@ -128,7 +128,7 @@ public class PluginHandler implements IPluginInterface,AbsKeyboard.OnkeyListener
 					out = PasswordHandler.instance().encryptNum(account,
 							password, encodeType, workIndex);
 				} catch (Exception e) {
-					Log.e("", e.getMessage(), e);
+					HLog.e("", e.getMessage(), e);
 				}
 				if (null != out) {
 					json.put("result", "0");
@@ -152,7 +152,7 @@ public class PluginHandler implements IPluginInterface,AbsKeyboard.OnkeyListener
 					json.put("msg", "加密失败");
 				}
 			} else if ("ttsPlay".equals(s)) {
-				Log.e("", "ttsplay:" + pa.optString("content"));
+				HLog.e("", "ttsplay:" + pa.optString("content"));
 				Tts.create();
 				Tts.speak(pa.optString("content"));
 			} else if ("showSign".equals(s)) {
@@ -215,8 +215,8 @@ public class PluginHandler implements IPluginInterface,AbsKeyboard.OnkeyListener
 				if (null != uiManamger){
 					uiManamger.clearSignBoard();
 				}
-			}else if ("setSignDialogStyle".equals(s)) {
-				Log.e(TAG, "setSignDialogStyle");
+			}else if ("setSignDiaHLogStyle".equals(s)) {
+				HLog.e(TAG, "setSignDiaHLogStyle");
 					int max = pa.optInt("pen_max");
 					if (null == uiManamger){
 						uiManamger = new UIManager();
@@ -266,7 +266,7 @@ public class PluginHandler implements IPluginInterface,AbsKeyboard.OnkeyListener
 	@Override
 	public void release() {
 		if (null != uiManamger){
-			Log.e(TAG, "dismis ...");
+			HLog.e(TAG, "dismis ...");
 			uiManamger.dimissDialog();
 			uiManamger = null;
 		}
@@ -287,9 +287,9 @@ public class PluginHandler implements IPluginInterface,AbsKeyboard.OnkeyListener
 
 	@Override
 	public void onKey(int value) {
-		Log.e("", "value:" + value);
+		HLog.e("", "value:" + value);
 		if (data != null) {
-			Log.e("", "idata is not null");
+			HLog.e("", "idata is not null");
 			JSONObject json = new JSONObject();
 			try {
 				json.put("cmd", "keyboard");

@@ -3,9 +3,8 @@ package com.nantian.pluginImpl;
 import java.util.Arrays;
 
 import android.text.TextUtils;
-import android.util.Log;
 
-import com.nantian.utils.LogUtil;
+import com.nantian.utils.HLog;
 import com.nantian.utils.Setting;
 import com.nantian.utils.Setting.EncModeType;
 import com.nantian.utils.StringUtil;
@@ -38,7 +37,7 @@ public class PasswordHandler {
 		try {
 
 			byte[] key = Setting.instance().getMainKey(mainIndex);
-			LogUtil.i(TAG, "主密钥::" + Utils.getHexString(key,key.length));
+			HLog.i(TAG, "主密钥::" + Utils.getHexString(key,key.length));
 			byte[] dst = new byte[data.length];
 			if (dencodeType == 0) {
 				dst = SMS4.decodeSMS4(data, key);
@@ -49,10 +48,10 @@ public class PasswordHandler {
 			String mainKey = Utils.getHexString(dst, dst.length);
 			Setting.instance().setMainKey(mainKey, mainIndex);
 
-			LogUtil.i(TAG, "主密钥::" + mainKey);
+			HLog.i(TAG, "主密钥::" + mainKey);
 			return true;
 		} catch (Exception e) {
-			LogUtil.e(TAG, e.toString(), new Exception());
+			HLog.e(TAG, e.toString(), new Exception());
 			return false;
 		}
 	}
@@ -60,12 +59,12 @@ public class PasswordHandler {
 	public boolean ciphWorkKey(byte[] data,int encodeType,int mainIndex,int workIndex) {
 		try {
 
-			LogUtil.i(TAG, "密钥号::" + workIndex);
+			HLog.i(TAG, "密钥号::" + workIndex);
 			int len = data.length;// 工作密钥长度
 			String datastring = Utils.getHexString(data, data.length);
-			LogUtil.e(TAG, "miwen::" + datastring);
+			HLog.e(TAG, "miwen::" + datastring);
 			byte[] key = Setting.instance().getMainKey(mainIndex);
-			Log.e("","main key:"+Utils.getHexString(key, key.length));
+			HLog.e("","main key:"+Utils.getHexString(key, key.length));
 			byte[] dst = new byte[data.length];
 			if (encodeType == 0) {
 				dst = SMS4.decodeSMS4(data, key);
@@ -74,10 +73,10 @@ public class PasswordHandler {
 			}
 			String workKey = Utils.getHexString(dst, dst.length);
 			Setting.instance().setWorkKey(workKey, workIndex);
-			LogUtil.e(TAG, "工作密钥::" + workKey);
+			HLog.e(TAG, "工作密钥::" + workKey);
 			return true;
 		} catch (Exception e) {
-			LogUtil.e(TAG, e.toString(), new Exception());
+			HLog.e(TAG, e.toString(), new Exception());
 			return false;
 		}
 	}
@@ -88,10 +87,10 @@ public class PasswordHandler {
 		try {
 			String mainKey = Utils.getHexString(data, data.length);
 			Setting.instance().setMainKey(mainKey, mainIndex);
-			LogUtil.i(TAG, "主密钥::" + mainKey);
+			HLog.i(TAG, "主密钥::" + mainKey);
 			return true;
 		} catch (Exception e) {
-			LogUtil.e(TAG, e.toString(), new Exception());
+			HLog.e(TAG, e.toString(), new Exception());
 			return false;
 		}
 	}
@@ -99,11 +98,11 @@ public class PasswordHandler {
 	public boolean plainWorkKey(byte[] data,int workIndex) {
 		try {
 			String workKey = Utils.getHexString(data, data.length);
-			LogUtil.i(TAG, "工作密钥::" + workKey);
+			HLog.i(TAG, "工作密钥::" + workKey);
 			Setting.instance().setWorkKey(workKey, workIndex);
 			return true;
 		} catch (Exception e) {
-			LogUtil.e(TAG, e.toString(), new Exception());
+			HLog.e(TAG, e.toString(), new Exception());
 			return false;
 		}
 	}
@@ -113,26 +112,26 @@ public class PasswordHandler {
 		try {
 			if (mode == 0) {
 				Setting.instance().setKeyboardEncryption(EncModeType.NONE);
-				LogUtil.i(TAG, "非加密模式");
+				HLog.i(TAG, "非加密模式");
 			} else if (mode == 1) {
 				Setting.instance().setKeyboardEncryption(EncModeType.DES);
-				LogUtil.i(TAG, "加密模式");
+				HLog.i(TAG, "加密模式");
 			} else if (mode == 2) {
 				Setting.instance().setKeyboardEncryption(EncModeType.SM4);
-				LogUtil.i(TAG, "国密加密模式");
+				HLog.i(TAG, "国密加密模式");
 			} else {
-				LogUtil.i(TAG, "默认模式");
+				HLog.i(TAG, "默认模式");
 			}
 			return true;
 
 		} catch (Exception e) {
-			LogUtil.e(TAG, e.toString(), new Exception());
+			HLog.e(TAG, e.toString(), new Exception());
 			return false;
 		}
 	}
  public byte[] encryptNum(String account,String password,int encodeType,int workIndex) throws Exception{
 	if (TextUtils.isEmpty(password)){
-		Log.e(TAG, "password is null!");
+		HLog.e(TAG, "password is null!");
 		return null;
 	}
 	boolean isAccount = !TextUtils.isEmpty(account);
@@ -145,17 +144,17 @@ public class PasswordHandler {
 		}
 		
 	}
-	Log.e(TAG, "account = "+account);
+	HLog.e(TAG, "account = "+account);
 	byte[] dst = null;
 	byte[] ps = StringUtil.hexStringToBytes(password);
-	Log.e(TAG, StringUtil.bytesToHexString(ps));
+	HLog.e(TAG, StringUtil.bytesToHexString(ps));
 	int keylen = 16;
-	Log.e(TAG, "workKey:"+StringUtil.bytesToHexString(Setting.instance().getWorkKey(workIndex)));
+	HLog.e(TAG, "workKey:"+StringUtil.bytesToHexString(Setting.instance().getWorkKey(workIndex)));
 	if(encodeType == 0){//SM4 国密加密
 		byte[] accAndPassword = DESUtils.ansi98(newAcc, password, keylen);
-		Log.e(TAG, "98 sm4:"+StringUtil.bytesToHexString(accAndPassword));
+		HLog.e(TAG, "98 sm4:"+StringUtil.bytesToHexString(accAndPassword));
 		dst = SMS4.encodeSMS4(accAndPassword, Setting.instance().getWorkKey(workIndex));
-		Log.e(TAG, "endoce sm4:"+StringUtil.bytesToHexString(dst));
+		HLog.e(TAG, "endoce sm4:"+StringUtil.bytesToHexString(dst));
 	 }else{
 		 byte[] key = Setting.instance().getWorkKey(workIndex);
 		 if (password.length() <= 8){
@@ -168,21 +167,21 @@ public class PasswordHandler {
 				//VanHid.Ansi98(password.getBytes(), password.getBytes().length, newAcc.getBytes(), newAcc.getBytes().length, Pin);
 				//Log.e(TAG, "98 des:"+StringUtil.bytesToHexString(Pin));
 			   byte[] accAndPassword = DESUtils.ansi98(newAcc, password, keylen);
-				Log.e(TAG, "98 des:"+StringUtil.bytesToHexString(accAndPassword));
+				HLog.e(TAG, "98 des:"+StringUtil.bytesToHexString(accAndPassword));
 
 				dst = DESUtils.encode(accAndPassword, key);
-				Log.e(TAG, "des encode:"+StringUtil.bytesToHexString(dst));
+				HLog.e(TAG, "des encode:"+StringUtil.bytesToHexString(dst));
 		 }else{
 				byte[] src = new byte[ps.length <= 8 ? 8 : 16];
 				Arrays.fill(src, (byte) 0xFF);
 				System.arraycopy(password, 0, src, 0, ps.length);
-				Log.e(TAG, "98 des:"+StringUtil.bytesToHexString(src));
+				HLog.e(TAG, "98 des:"+StringUtil.bytesToHexString(src));
 				dst = DESUtils.encode(src, key);
 
 		 }
 		 
 	 }
-	Log.e(TAG, StringUtil.bytesToHexString(dst));
+	HLog.e(TAG, StringUtil.bytesToHexString(dst));
 	 return dst;
  }
  
@@ -197,8 +196,8 @@ public class PasswordHandler {
 			}else{
 				key = Setting.instance().getWorkKey(index);
 			}
-			Log.e(TAG, StringUtil.bytesToHexString(key));
-			Log.e(TAG, "data:"+StringUtil.bytesToHexString(src));
+			HLog.e(TAG, StringUtil.bytesToHexString(key));
+			HLog.e(TAG, "data:"+StringUtil.bytesToHexString(src));
 			if (encodeMode == 0) {//sm4
 
 				return SMS4.encodeSMS4(src, key);
@@ -208,7 +207,7 @@ public class PasswordHandler {
 				return DESUtils.encode(src, key);
 			}
 		} catch (Exception e) {
-			LogUtil.e(TAG, e.toString(), new Exception());
+			HLog.e(TAG, e.toString(), new Exception());
 		}
 		return null;
 	}
