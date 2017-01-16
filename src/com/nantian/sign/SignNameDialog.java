@@ -134,9 +134,12 @@ public class SignNameDialog extends Dialog {
 	@Override
 	public void show() {
 		super.show();
-		
+
 		HLog.e(TAG, "view width = "+mSlate.getWidth()+", height = "+mSlate.getHeight());
 		HLog.e(TAG, "view width = "+mSlate.getMeasuredWidth()+", height = "+mSlate.getMeasuredHeight());
+
+		mSlate.clear();
+
 	}
 
 	@Override

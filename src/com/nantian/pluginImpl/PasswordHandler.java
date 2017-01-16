@@ -146,10 +146,12 @@ public class PasswordHandler {
 	}
 	HLog.e(TAG, "account = "+account);
 	byte[] dst = null;
-	byte[] ps = StringUtil.hexStringToBytes(password);
-	HLog.e(TAG, StringUtil.bytesToHexString(ps));
+
 	int keylen = 16;
+
 	HLog.e(TAG, "workKey:"+StringUtil.bytesToHexString(Setting.instance().getWorkKey(workIndex)));
+
+ 	int length  = password.length();
 	if(encodeType == 0){//SM4 π˙√‹º”√‹
 		byte[] accAndPassword = DESUtils.ansi98(newAcc, password, keylen);
 		HLog.e(TAG, "98 sm4:"+StringUtil.bytesToHexString(accAndPassword));
@@ -172,6 +174,10 @@ public class PasswordHandler {
 				dst = DESUtils.encode(accAndPassword, key);
 				HLog.e(TAG, "des encode:"+StringUtil.bytesToHexString(dst));
 		 }else{
+			 	if (length%2 != 0){
+			 		password = password+"F";
+			 	}
+			 	byte[] ps = StringUtil.hexStringToBytes(password);
 				byte[] src = new byte[ps.length <= 8 ? 8 : 16];
 				Arrays.fill(src, (byte) 0xFF);
 				System.arraycopy(password, 0, src, 0, ps.length);

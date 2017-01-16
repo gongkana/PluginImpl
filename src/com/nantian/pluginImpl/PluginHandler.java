@@ -205,7 +205,13 @@ public class PluginHandler implements IPluginInterface,AbsKeyboard.OnkeyListener
 					}
 					signPDF.setKeySorePath(keypath);
 					signPDF.setPdfPath(Environment.getExternalStorageDirectory()+"/Nantian/Temp"+File.separator+pdfName);
-					uiManamger.saveBitmapAndSign(signPDF);
+					try {
+						uiManamger.saveBitmapAndSign(signPDF);
+					} catch (Exception e) {
+						json.put("result", "-1");
+						json.put("msg", e.getMessage());
+						
+					}
 					
 				}
 
