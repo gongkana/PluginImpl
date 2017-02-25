@@ -7,7 +7,6 @@ import android.util.Log;
 
 import com.nantian.utils.LogUtil;
 import com.nantian.utils.Setting;
-import com.nantian.utils.Setting.EncModeType;
 import com.nantian.utils.StringUtil;
 import com.nantian.utils.Utils;
 import com.van.hid.DESUtils;
@@ -32,6 +31,15 @@ public class PasswordHandler {
 		}
 		return instance;
 	}
+	//密码键盘  keyboard begin
+	
+
+	public boolean setEncreptMode(int mode){
+		boolean result = true;
+		Setting.instance().setPasswordKeyboardMode(mode);
+		return result;
+	}
+	
 	/**密文下载主密钥*/
 	public boolean ciphMainKey(byte[] data,int dencodeType,int mainIndex) {
 
@@ -42,8 +50,10 @@ public class PasswordHandler {
 			byte[] dst = new byte[data.length];
 			if (dencodeType == 0) {
 				dst = SMS4.decodeSMS4(data, key);
-			} else {
+			} else if(dencodeType == 1){
 				dst = DESUtils.decode(data, key);
+			}else{
+				return false;
 			}
 
 			String mainKey = Utils.getHexString(dst, dst.length);
@@ -56,6 +66,65 @@ public class PasswordHandler {
 			return false;
 		}
 	}
+	
+	/**获取主密钥*/
+	public byte[] getMainKey(int index){
+		return Setting.instance().getMainKey(index);
+	}
+	
+	/**恢复出厂密钥*/
+	public void resetKey() {
+		Setting.instance().setMainKey(null, -1);
+	}
+	
+	/**初始化主密钥
+	 * @throws Exception */
+	public byte[] initialKey(byte[] initialKey,int mainKeyNum,int decodeType) throws Exception {
+		
+		byte[] mainKey ;
+		if (decodeType == 0){
+			mainKey = SMS4.decodeSMS4(initialKey, Utils.getHexData(Setting.instance().DEF_MAIN_KEY));
+		}else if(decodeType ==1){
+			mainKey = DESUtils.decode(initialKey, Utils.getHexData(Setting.instance().DEF_MAIN_KEY));
+		}else{
+			mainKey = Utils.getHexData(Setting.instance().DEF_MAIN_KEY);
+		}
+		Setting.instance().setMainKey(StringUtil.bytesToHexString(mainKey), mainKeyNum);
+		
+		return mainKey;
+	}
+	
+	/** 获取密码键盘密钥校验值 
+	 * 	keyType  密钥类型：0-主密钥，1-工作密钥
+		keyIndex 密钥索引
+	 *  encodeType 加密方式 0-sm4,1-des
+	 * @throws Exception 
+	 * */
+	public byte[] getKeyboardKeyVerify(int keyType,int keyIndex,int encodeType) throws Exception {
+	
+		byte[] src = new byte[16];
+		Arrays.fill(src, (byte) 0x30);
+		byte[] dst = new byte[16];
+		
+		Arrays.fill(dst, (byte) 0x00);
+		
+		byte[] strKey = (0 == keyType) ? Setting.instance().getMainKey(keyIndex)
+					: Setting.instance().getWorkKey(keyIndex);
+		
+		byte[] cvVerify ;
+		byte [] cvVerifyValue;
+		if (encodeType == 0){
+			cvVerify = new byte[16];
+			cvVerifyValue = SMS4.encodeSMS4(cvVerify, strKey);
+		}else if (encodeType == 1){
+			cvVerify = new byte[8];
+			cvVerifyValue = DESUtils.encode(cvVerify, strKey);
+		}else{
+			cvVerifyValue = new byte[8];
+		}
+		return cvVerifyValue;
+	}
+
 	/**密文下载工作密钥*/
 	public boolean ciphWorkKey(byte[] data,int encodeType,int mainIndex,int workIndex) {
 		try {
@@ -108,28 +177,7 @@ public class PasswordHandler {
 		}
 	}
 	
-	public boolean setKeyboardWordmode(int mode) {
-		// Utils.showData(data, request.getLength());
-		try {
-			if (mode == 0) {
-				Setting.instance().setKeyboardEncryption(EncModeType.NONE);
-				LogUtil.i(TAG, "非加密模式");
-			} else if (mode == 1) {
-				Setting.instance().setKeyboardEncryption(EncModeType.DES);
-				LogUtil.i(TAG, "加密模式");
-			} else if (mode == 2) {
-				Setting.instance().setKeyboardEncryption(EncModeType.SM4);
-				LogUtil.i(TAG, "国密加密模式");
-			} else {
-				LogUtil.i(TAG, "默认模式");
-			}
-			return true;
 
-		} catch (Exception e) {
-			LogUtil.e(TAG, e.toString(), new Exception());
-			return false;
-		}
-	}
  public byte[] encryptNum(String account,String password,int encodeType,int workIndex) throws Exception{
 	if (TextUtils.isEmpty(password)){
 		Log.e(TAG, "password is null!");
@@ -142,6 +190,10 @@ public class PasswordHandler {
 		
 		if(aclen>=13){
 			newAcc = account.substring(aclen-13,aclen-1);
+		} else{
+			while (newAcc.length()<13) {
+				newAcc = "0"+newAcc;
+			}
 		}
 		
 	}
@@ -151,9 +203,16 @@ public class PasswordHandler {
 	int keylen = 16;
 	Log.e(TAG, "workKey:"+StringUtil.bytesToHexString(Setting.instance().getWorkKey(workIndex)));
  	int length  = password.length();
-
+ 	if (length%2 != 0){
+ 		password = password+"F";
+ 	}
 	if(encodeType == 0){//SM4 国密加密
-		byte[] accAndPassword = DESUtils.ansi98(newAcc, password, keylen);
+		byte[] accAndPassword;
+		if (isAccount){
+			accAndPassword = DESUtils.ansi98(newAcc, password, keylen);
+		}else {
+			accAndPassword = StringUtil.hexStringToBytes(password);
+		}
 		Log.e(TAG, "98 sm4:"+StringUtil.bytesToHexString(accAndPassword));
 		dst = SMS4.encodeSMS4(accAndPassword, Setting.instance().getWorkKey(workIndex));
 		Log.e(TAG, "endoce sm4:"+StringUtil.bytesToHexString(dst));
@@ -174,9 +233,7 @@ public class PasswordHandler {
 				dst = DESUtils.encode(accAndPassword, key);
 				Log.e(TAG, "des encode:"+StringUtil.bytesToHexString(dst));
 		 }else{
-			 	if (length%2 != 0){
-			 		password = password+"F";
-			 	}
+
 			 	byte[] ps = StringUtil.hexStringToBytes(password);
 				byte[] src = new byte[ps.length <= 8 ? 8 : 16];
 				Arrays.fill(src, (byte) 0xFF);
@@ -205,11 +262,8 @@ public class PasswordHandler {
 			Log.e(TAG, StringUtil.bytesToHexString(key));
 			Log.e(TAG, "data:"+StringUtil.bytesToHexString(src));
 			if (encodeMode == 0) {//sm4
-
 				return SMS4.encodeSMS4(src, key);
-
 			} else {
-
 				return DESUtils.encode(src, key);
 			}
 		} catch (Exception e) {
@@ -220,5 +274,14 @@ public class PasswordHandler {
 	
 	public void resetMainkey(){
 		Setting.instance().setMainKey(null, -1);
+	}
+
+	public void setPasswordLen(int length) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	public void setEncodeType(int encodeType) {
+		Setting.instance().setPasswordKeyboardMode(encodeType);		
 	}
 }

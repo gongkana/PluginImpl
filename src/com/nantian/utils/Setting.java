@@ -8,6 +8,7 @@ import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnCompletionListener;
 import android.media.MediaPlayer.OnErrorListener;
+import android.text.TextUtils;
 
 import com.van.hid.DESUtils;
 
@@ -20,32 +21,51 @@ public class Setting {
 	private static Setting _instance;
 	private static final String TAG = Setting.class.getSimpleName();
 	private Context mContext;
-	private AdType adType; // 锟斤拷锟脚癸拷锟斤拷锟斤拷锟�
-	private String sysPassword; // 系统锟斤拷锟斤拷锟斤拷锟斤拷
-	private int volumeAd; // 锟斤拷锟斤拷锟斤拷锟�
-	private int volumeVoice; // 业锟斤拷锟斤拷锟斤拷 0-锟斤拷锟斤拷锟斤拷1-小锟斤拷2-锟叫ｏ拷3-锟斤拷
-	private int volumeKey; // 锟斤拷锟斤拷锟斤拷锟斤拷
-	private String[] mMainKeys; // 锟斤拷锟斤拷钥
-	private String[] mWorkKeys; // 锟斤拷锟斤拷锟斤拷钥
-	private int sysTimeout; // 系统锟斤拷时
-	private int passTimeout; // 锟斤拷锟斤拷锟斤拷锟诫超时
-	private int otherTimeout; // 锟斤拷锟斤拷锟斤拷锟诫超时
-	private int enterAdWait; // 锟斤拷锟斤拷锟斤拷却锟绞憋拷锟�
-	private int baudRate; // 锟斤拷锟节诧拷锟斤拷锟绞ｏ拷 0-9600
-	private int keyWork; // 锟斤拷锟斤拷锟斤拷坦锟斤拷锟斤拷锟绞�
-	private int uPLength; // 锟斤拷锟诫长锟斤拷
-	private int btLayout; // 锟斤拷锟斤拷锟街诧拷锟斤拷式
-	private int UTimeOut; // 锟斤拷时锟斤拷锟酵斤拷锟�
-	private int DCJ; // 锟姐钞锟斤拷
-	private int voicenum; // 锟斤拷锟斤拷锟斤拷锟�
-	private EncModeType passwordKeyboardMode; // 锟斤拷锟斤拷锟斤拷碳锟斤拷锟侥Ｊ�
-
+	private String sysPassword; // 系统设置密码
+	private int volumeAd; // 广告音量
+	private int volumeVoice; // 业务音量 0-静音，1-小，2-中，3-大
+	private int volumeKey; // 按键音量
+	private String[] mMainKeys; // 主密钥
+	private String[] mWorkKeys; // 工作密钥
+	private int sysTimeout; // 系统超时
+	private int passTimeout; // 密码输入超时
+	private int otherTimeout; // 其它输入超时
+	private int enterAdWait; // 进入广告等待时间
+	private int baudRate; // 串口波特率， 0-9600
+	private int keyWork; // 密码键盘工作方式
+	private int uPLength; // 密码长度
+	private int btLayout; // 按键分布方式
+	private int UTimeOut; // 超时上送结果
+	private int DCJ; // 点钞机
+	private int voicenum; // 语音编号
+	
+	//序列号
+	private String serialKey;
+	
 	public static final String VOLUME_FILE = "VolumeFile";// 锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟侥硷拷
-	public static final String DEF_MAIN_KEY = "3838383838383838";
-	public static final String DEF_WORK_KEY = "3030303030303030";
+	public static final String DEF_MAIN_KEY_SM4 = "38383838383838383838383838383838";
+	public static final String DEF_WORK_KEY_SM4 = "30303030303030303030303030303030";
+	public static final String DEF_MAIN_KEY_DES = "3838383838383838";
+	public static final String DEF_WORK_KEY_DES = "3030303030303030";
+	public  String DEF_MAIN_KEY = DEF_MAIN_KEY_DES;
+	public  String DEF_WORK_KEY = DEF_WORK_KEY_DES;
 	public static final int MAIN_KEY_NUMBER = 16;// 十锟斤拷锟斤拷锟斤拷锟斤拷钥锟斤拷应十锟斤拷锟介工锟斤拷锟斤拷钥
 	private byte[] mVerifyCode = { 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
 			0x18 };
+
+	private int passwordKeyboardMode = 1;//0位sm4,1为3DES
+	
+	public int getPasswordKeyboardMode() {
+		
+		return passwordKeyboardMode;
+	}
+
+	public void setPasswordKeyboardMode(int passwordKeyboardMode) {
+		this.passwordKeyboardMode = passwordKeyboardMode;
+		DEF_MAIN_KEY = passwordKeyboardMode == 1?DEF_MAIN_KEY_DES:DEF_MAIN_KEY_SM4;
+		DEF_WORK_KEY = passwordKeyboardMode == 1?DEF_WORK_KEY_DES:DEF_WORK_KEY_SM4;
+		save();
+	}
 
 	private Setting() {
 
@@ -98,19 +118,26 @@ public class Setting {
 		SharedPreferences cfg = mContext.getSharedPreferences(TAG,
 				Context.MODE_PRIVATE);
 
-		adType = AdType.values()[cfg.getInt("AdType", 0)];
 		sysPassword = cfg.getString("Password", "123456");
 		volumeAd = cfg.getInt("VolumeAd", 2);
 		volumeVoice = cfg.getInt("VolumeVoice", 2);
 		volumeKey = cfg.getInt("VolumeKey", 2);
-
+		try {
 		for (int i = 0; i < mMainKeys.length; i++) {// 一锟斤拷始锟斤拷锟饺讹拷取十锟斤拷锟斤拷锟斤拷钥锟酵癸拷锟斤拷锟斤拷钥
-			mMainKeys[i] = cfg.getString("MainKey" + i, DEF_MAIN_KEY);
+			
+				mMainKeys[i] = cfg.getString("MainKey" + i, 
+						StringUtil.bytesToHexString(
+								DESUtils.encode(StringUtil.hexStringToBytes(DEF_MAIN_KEY), mVerifyCode)));
+	
+
 			LogUtil.i(TAG, "mMainKeys[" + i + "]::" + mMainKeys[i]);
 			mWorkKeys[i] = cfg.getString("WorkKey" + i, DEF_WORK_KEY);
 			LogUtil.i(TAG, "mWorkKeys[" + i + "]::" + mWorkKeys[i]);
 		}
-
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		sysTimeout = cfg.getInt("SystemTimeout", 20);
 		passTimeout = cfg.getInt("PasswordTimeout", 20);
 		otherTimeout = cfg.getInt("OtherTimeout", 20);
@@ -123,17 +150,18 @@ public class Setting {
 
 		UTimeOut = cfg.getInt("UTimeOut", 0);
 		DCJ = cfg.getInt("DCJ", 0);
+		
+		passwordKeyboardMode = cfg.getInt("EncMode", 1);
+		DEF_MAIN_KEY = passwordKeyboardMode == 1?DEF_MAIN_KEY_DES:DEF_MAIN_KEY_SM4;
+		DEF_WORK_KEY = passwordKeyboardMode == 1?DEF_WORK_KEY_DES:DEF_WORK_KEY_SM4;
+		serialKey		 = cfg.getString("SerialKey", "");
 
-		passwordKeyboardMode = EncModeType.valueOf(cfg.getString("EncMode",
-				"NONE"));
 	}
 
 	private void priSave() {
 		SharedPreferences cfg = mContext.getSharedPreferences(TAG,
 				Context.MODE_PRIVATE);
 		SharedPreferences.Editor editor = cfg.edit();
-
-		editor.putInt("AdType", adType.ordinal());
 		editor.putString("Password", sysPassword);
 		editor.putInt("VolumeAd", volumeAd);
 		editor.putInt("VolumeVoice", volumeVoice);
@@ -144,6 +172,8 @@ public class Setting {
 		editor.putInt("VolumeKey", volumeKey);
 
 		for (int i = 0; i < mMainKeys.length; i++) {
+			
+			
 			editor.putString("MainKey" + i, mMainKeys[i]);
 			editor.putString("WorkKey" + i, mWorkKeys[i]);
 		}
@@ -159,8 +189,10 @@ public class Setting {
 		editor.putInt("BtLayout", btLayout);
 		editor.putInt("VoiceNum", voicenum);
 
-		editor.putString("EncMode", passwordKeyboardMode.toString());
 
+		editor.putInt("EncMode", passwordKeyboardMode);
+		editor.putString("SerialKey", serialKey);
+		
 		editor.commit();
 	}
 
@@ -168,14 +200,7 @@ public class Setting {
 		priSave();
 	}
 
-	public AdType getAdType() {
-		return adType;
-	}
 
-	public void setAdType(AdType type) {
-		adType = type;
-		save();
-	}
 
 	public String getSysPassword() {
 		return sysPassword;
@@ -190,12 +215,6 @@ public class Setting {
 		return volumeAd;
 	}
 
-	public void setVolumeAd(int value) {
-		volumeAd = value;
-		updateVolumeAd();
-		save();
-	}
-
 	public void setVolumeNum(int value) {
 		voicenum = value;
 		save();
@@ -207,12 +226,6 @@ public class Setting {
 
 	public int getVolumeVoice() {
 		return volumeVoice;
-	}
-
-	public void setVolumeVoice(int value) {
-		volumeVoice = value;
-		updateVolumeVoice();
-		save();
 	}
 
 	public int getVolumeKey() {
@@ -328,6 +341,7 @@ public class Setting {
 		} else if (!StringUtil.isNotEmpty(keyValue) && index < 0) {
 			for (int i = 0; i < mMainKeys.length; i++) {
 				try {
+
 					mMainKeys[i] = StringUtil.bytesToHexString(
 							DESUtils.encode(StringUtil.hexStringToBytes(DEF_MAIN_KEY), mVerifyCode));
 				} catch (Exception e) {
@@ -447,47 +461,7 @@ public class Setting {
 		DCJ = value;
 	}
 
-	public EncModeType getKeyboardEncryption() {
-		return passwordKeyboardMode;
-	}
 
-	public void setKeyboardEncryption(EncModeType encryption) {
-		passwordKeyboardMode = encryption;
-	}
-
-	/**
-	 * 锟斤拷锟�
-	 * 
-	 * @param AdVolume
-	 */
-	public void updateVolumeAd(int AdVolume) {
-		volumeAd = AdVolume;
-		AudioManager manager = (AudioManager) mContext
-				.getSystemService(Context.AUDIO_SERVICE);
-		manager.setStreamVolume(AudioManager.STREAM_MUSIC, AdVolume,
-				AudioManager.FLAG_PLAY_SOUND);
-	}
-
-	public void updateVolumeAd() {
-		updateVolumeAd(volumeAd);
-	}
-
-	/**
-	 * 业锟斤拷
-	 * 
-	 * @param volume
-	 */
-	public void updateVolumeVoice(int volume) {
-		volumeVoice = volume;
-		AudioManager manager = (AudioManager) mContext
-				.getSystemService(Context.AUDIO_SERVICE);
-		manager.setStreamVolume(AudioManager.STREAM_SYSTEM, volume,
-				AudioManager.FLAG_PLAY_SOUND);
-	}
-
-	public void updateVolumeVoice() {
-		updateVolumeVoice(volumeVoice);
-	}
 
 	public void updateVolumeKey() {
 		AudioManager manager = (AudioManager) mContext
@@ -525,17 +499,23 @@ public class Setting {
 		} catch (IllegalStateException ex) {
 		}
 	}
-
-	public static enum AdType { // 锟斤拷锟斤拷锟斤拷锟�
-		TYPE_PICTURE, // 图片
-		TYPE_VIDEO, // 锟斤拷频
-		TYPE_MIXED, // 锟斤拷锟�
+	public String getSerialKey() {
+		if (TextUtils.isEmpty(serialKey)) {
+			serialKey = String.valueOf((int) ((Math.random() * 900000) + 100000));
+			save();
+		}
+		return serialKey;
 	}
-
-	public static enum EncModeType { // 锟斤拷锟斤拷模式
-		NONE, // 锟斤拷锟斤拷锟斤拷
-		DES, // 3DES锟斤拷锟斤拷
-		SM4, // SM4
-		AES // AES
+	
+	public void setSerialKey(String key) {
+		serialKey = key;
+		save();
+	}
+	
+	public static enum EncModeType { // 加密模式
+		NONE, 	// 不加密
+		DES, 	// 3DES加密
+		SM4, 	// SM4
+		AES		// AES
 	}
 }

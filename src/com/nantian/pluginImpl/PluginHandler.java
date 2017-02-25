@@ -17,6 +17,7 @@ import com.nantian.sign.PDFCenter;
 import com.nantian.utils.Setting;
 import com.nantian.utils.StringUtil;
 import com.nantian.utils.Utils;
+import com.van.hid.VanKeyboard;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -33,9 +34,6 @@ public class PluginHandler implements IPluginInterface,AbsKeyboard.OnkeyListener
 	private IData data;
 
 	private Context mContext;
-
-	private AbsKeyboard keyboardManager;
-
 	
 	private UIManager uiManamger;
 	
@@ -85,7 +83,11 @@ public class PluginHandler implements IPluginInterface,AbsKeyboard.OnkeyListener
 					return json;
 				}
 				byte[] data = StringUtil.hexStringToBytes(value);
-				int decodeType = pa.optInt("decodeType", 0);
+				int decodeType = Setting.instance().getPasswordKeyboardMode();
+				if(decodeType == -1){
+					json.put("result", "-1");
+					json.put("msg", "加密方式不对");
+				}
 				int index = pa.optInt("mainIndex", 0);
 				if (PasswordHandler.instance().ciphMainKey(data, decodeType,
 						index)) {
@@ -156,9 +158,17 @@ public class PluginHandler implements IPluginInterface,AbsKeyboard.OnkeyListener
 				Tts.create();
 				Tts.speak(pa.optString("content"));
 			} else if ("showSign".equals(s)) {
-				SignBoardInfo signinfo = new SignBoardInfo();
-				signinfo.setSign_x(pa.optInt("pointX"));
-				signinfo.setSing_y(pa.optInt("pointY"));
+				SignBoardInfo signinfo = new SignBoardInfo();				
+				signinfo.setSign_x(pa.optInt("pointX"));				 
+				int statusBarHeight1 = 0;  
+				//获取status_bar_height资源的ID  
+				int resourceId = mContext.getResources().getIdentifier("status_bar_height", "dimen", "android");  
+				if (resourceId > 0) {  
+				    //根据资源ID获取响应的尺寸值  
+				    statusBarHeight1 = mContext.getResources().getDimensionPixelSize(resourceId);  
+				}  
+				Log.e("WangJ", "状态栏-方法1:" + statusBarHeight1); 
+				signinfo.setSing_y(pa.optInt("pointY")-statusBarHeight1);
 				signinfo.setWidth(pa.optInt("width"));
 				signinfo.setHeigth(pa.optInt("height"));
 				if (null == uiManamger){
@@ -243,25 +253,82 @@ public class PluginHandler implements IPluginInterface,AbsKeyboard.OnkeyListener
 					}
 					
 					
+			}else if ("getVersion".equals(s)) {
+				json.put("data",SystemHandler.instance().getVersion());
+			}else if ("setVolume".equals(s)) {
+				int volumeType = pa.optInt("volumeType");
+				int volumeValue = pa.optInt("volumeValue");
+				SystemHandler.instance().settingVolume(volumeType, volumeValue);
+			}else if ("reboot".equals(s)) {
+				json.put("data",SystemHandler.instance().reboot());
+			}else if ("getDeviceInfo".equals(s)) {
+				try {
+					String info = SystemHandler.instance().getDeviceMes();
+					json.put("data", info);
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+					json.put("result", "1");
+					json.put("msg", e.getMessage());
+				}
+				
+			}else if ("getPublicKey".equals(s)) {
+				int index = pa.optInt("mainIndex",0);
+				byte[] key = PasswordHandler.instance().getMainKey(index);
+				json.put("data", StringUtil.bytesToHexString(key));
+			}else if ("resetKey".equals(s)){//恢复出厂密钥
+				PasswordHandler.instance().resetKey();
+			}else if ("initialKey".equals(s)){//初始化主密钥
+				byte [] initialKey = StringUtil.hexStringToBytes(pa.optString("publicKey"));
+				int mainKeyNum = pa.optInt("mainIndex",0);
+				int decodeType = pa.optInt("decodeType",Setting.instance().getPasswordKeyboardMode());
+				try {
+					json.put("data",PasswordHandler.instance().initialKey(initialKey, mainKeyNum, decodeType));
+				} catch (Exception e) {
+					json.put("result",-1);
+					json.put("msg",e.getMessage());
+				}
+			}else if ("getKeyboardKeyVerify".equals(s)){//获取密码键盘校验值
+				int keyType = pa.optInt("keyType",0);
+				int keyIndex = pa.optInt("keyIndex",0);
+				int encodeType = pa.optInt("encodeType",Setting.instance().getPasswordKeyboardMode());
+				try {
+					json.put("data",StringUtil.bytesToHexString(PasswordHandler.instance().getKeyboardKeyVerify(keyType, keyIndex, encodeType)));
+				} catch (Exception e) {
+					json.put("result",-1);
+					json.put("msg",e.getMessage());
+				}
+			}else if("setPasswordLen".equals(s)){
+				int length = pa.optInt("length",6);
+				PasswordHandler.instance().setPasswordLen(length);
+			}else if("setEncodeType".equals(s)){
+				int EncodeType = pa.optInt("encodeType",1);
+				PasswordHandler.instance().setEncodeType(EncodeType);
 			}
+			
 		} catch (JSONException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return json;
 	}
-
-	private void openKeybord(int mode) {
-		keyboardManager.openKeyboard(mode);
+	
+	
+	private void closeKeybord() {
+		VanKeyboard.instance().closeKeyboard();
+		
 	}
 
-	private void closeKeybord() {
-		keyboardManager.closeKeyboard();
+	private void openKeybord(int type) {
+		if(VanKeyboard.instance().requestOpenKeyboard()){
+		VanKeyboard.instance().openKeyboard();
+		}
+		
 	}
 
 	@Override
 	public String getVesion() {
-		return null;
+		return "1.0.0";
 	}
 
 	@Override
@@ -276,7 +343,8 @@ public class PluginHandler implements IPluginInterface,AbsKeyboard.OnkeyListener
 			uiManamger.dimissDialog();
 			uiManamger = null;
 		}
-		keyboardManager.closeKeyboard();
+		VanKeyboard.instance().release();
+		SystemHandler.instance().destroy();
 	}
 
 	@Override
@@ -288,7 +356,7 @@ public class PluginHandler implements IPluginInterface,AbsKeyboard.OnkeyListener
 	public void setContext(Context context) {
 		this.mContext = context;
 		Setting.instance().setContext(context);
-
+		SystemHandler.instance().init(context);
 	}
 
 	@Override
@@ -310,8 +378,9 @@ public class PluginHandler implements IPluginInterface,AbsKeyboard.OnkeyListener
 
 	@Override
 	public void initKeyboard(AbsKeyboard arg0) {
-		keyboardManager = arg0;
-		keyboardManager.setOnkeyListener(this);	
+		// TODO Auto-generated method stub
+		
 	}
+
 
 }

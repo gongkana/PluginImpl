@@ -1,14 +1,23 @@
 package com.nantian.pluginImpl;
 
 
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.app.Activity;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
@@ -46,13 +55,13 @@ public class MainActivity extends Activity {
         pluginHandler.setContext(this);
         //dialog = new SignNameDialog(this,20,100,300,400);
         
-        
+      
         findViewById(R.id.action).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
          
             	try {
-            		
+
             	JSONObject json = new JSONObject(edit.getText().toString());
             	final String tag = json.optString("cmd");
             	final String data = json.optString("data","{}");
@@ -96,4 +105,31 @@ public class MainActivity extends Activity {
 		}
 
     }
+    
+    
+	public String ReadFile(String Path){
+		BufferedReader reader = null;
+		String laststr = "";
+		try{
+		FileInputStream fileInputStream = new FileInputStream(Path);
+		InputStreamReader inputStreamReader = new InputStreamReader(fileInputStream, "UTF-8");
+		reader = new BufferedReader(inputStreamReader);
+		String tempString = null;
+		while((tempString = reader.readLine()) != null){
+		laststr += tempString;
+		}
+		reader.close();
+		}catch(IOException e){
+		e.printStackTrace();
+		}finally{
+		if(reader != null){
+		try {
+		reader.close();
+		} catch (IOException e) {
+		e.printStackTrace();
+		}
+		}
+		}
+		return laststr;
+		}
 }
