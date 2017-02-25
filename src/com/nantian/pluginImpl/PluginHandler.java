@@ -166,8 +166,7 @@ public class PluginHandler implements IPluginInterface,AbsKeyboard.OnkeyListener
 				if (resourceId > 0) {  
 				    //根据资源ID获取响应的尺寸值  
 				    statusBarHeight1 = mContext.getResources().getDimensionPixelSize(resourceId);  
-				}  
-				Log.e("WangJ", "状态栏-方法1:" + statusBarHeight1); 
+				}   
 				signinfo.setSing_y(pa.optInt("pointY")-statusBarHeight1);
 				signinfo.setWidth(pa.optInt("width"));
 				signinfo.setHeigth(pa.optInt("height"));

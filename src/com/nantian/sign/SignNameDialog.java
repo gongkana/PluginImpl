@@ -5,10 +5,8 @@ import java.io.File;
 import android.app.Dialog;
 import android.content.Context;
 import android.graphics.Color;
-import android.graphics.PixelFormat;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Environment;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.Window;
 import android.view.WindowManager;
@@ -18,6 +16,7 @@ import android.widget.FrameLayout.LayoutParams;
 import com.nantian.entity.SignBoardInfo;
 import com.nantian.entity.SignPDF;
 import com.nantian.sign.views.SignaturePad;
+import com.nantian.utils.HLog;
 import com.nantian.utils.Setting;
 import com.nantian.utils.Utils;
 import com.van.paperless.R;
@@ -121,7 +120,7 @@ public class SignNameDialog extends Dialog {
 		lp.x = x_point;
 		lp.y = y_point;
 		dialogWindow.setAttributes(lp);
-		Log.e(TAG, "update .... ");
+		HLog.e(TAG, "update .... ");
 		mSlate.updateWidth(width, height);
 		
 	}
@@ -135,15 +134,18 @@ public class SignNameDialog extends Dialog {
 	@Override
 	public void show() {
 		super.show();
+
+		HLog.e(TAG, "view width = "+mSlate.getWidth()+", height = "+mSlate.getHeight());
+		HLog.e(TAG, "view width = "+mSlate.getMeasuredWidth()+", height = "+mSlate.getMeasuredHeight());
+
 		mSlate.clear();
-		Log.e(TAG, "view width = "+mSlate.getWidth()+", height = "+mSlate.getHeight());
-		Log.e(TAG, "view width = "+mSlate.getMeasuredWidth()+", height = "+mSlate.getMeasuredHeight());
+
 	}
 
 	@Override
 	public void dismiss() {
 		super.dismiss();
-		Log.e("", "dialog  dismis");
+		HLog.e("", "dialog  dismis");
 	}
 	
 	public String saveSignPic() throws Exception{

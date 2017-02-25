@@ -9,8 +9,7 @@ import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.DESKeySpec;
 import javax.crypto.spec.DESedeKeySpec;
 
-import android.util.Log;
-
+import com.nantian.utils.HLog;
 import com.nantian.utils.StringUtil;
 
 public class DESUtils {
@@ -105,18 +104,18 @@ public class DESUtils {
 		int srcLen = acSrc.length>length?length:acSrc.length;
 		int passLen = psSrc.length>length?length:psSrc.length;
 		System.arraycopy(acSrc, 0, ac, acstart, srcLen);
-		Log.e("", "account :"+StringUtil.bytesToHexString(ac));
+		HLog.e("", "account :"+StringUtil.bytesToHexString(ac));
 		Arrays.fill(pa, (byte) 0xFF);
 		pa[0] = (byte) pass.length();
 		if (passLen> length-1){
 			passLen = length-1;
 		}
 		System.arraycopy(psSrc, 0, pa, 1, passLen);
-		Log.e("", "password :"+StringUtil.bytesToHexString(pa));
+		HLog.e("", "password :"+StringUtil.bytesToHexString(pa));
 		for (int i = 0; i < length; i++) {
 			dst[i] = (byte) (ac[i]^pa[i]);
 		}
-		Log.e("", "ansi :"+StringUtil.bytesToHexString(dst));
+		HLog.e("", "ansi :"+StringUtil.bytesToHexString(dst));
 		return dst;
 	}
 }

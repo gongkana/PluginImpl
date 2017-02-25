@@ -282,6 +282,7 @@ public class PasswordHandler {
 	}
 
 	public void setEncodeType(int encodeType) {
-		Setting.instance().setPasswordKeyboardMode(encodeType);		
+		Setting.instance().setPasswordKeyboardMode(encodeType);
+		
 	}
 }

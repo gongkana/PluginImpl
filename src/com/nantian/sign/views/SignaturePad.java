@@ -11,7 +11,6 @@ import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.RectF;
-import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
@@ -23,6 +22,7 @@ import com.nantian.sign.utils.SvgBuilder;
 import com.nantian.sign.utils.TimedPoint;
 import com.nantian.sign.view.ViewCompat;
 import com.nantian.sign.view.ViewTreeObserverCompat;
+import com.nantian.utils.HLog;
 
 public class SignaturePad extends View {
     //View state
@@ -129,7 +129,7 @@ public class SignaturePad extends View {
 
 
     public void clear() {
-    	Log.e("", "clear ................. ");
+    	HLog.e("", "clear ................. ");
         mSvgBuilder.clear();
         mPoints .clear();
         mLastVelocity = 0;

@@ -5,11 +5,11 @@ import android.graphics.Color;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
-import android.util.Log;
 
 import com.nantian.entity.SignBoardInfo;
 import com.nantian.entity.SignPDF;
 import com.nantian.sign.SignNameDialog;
+import com.nantian.utils.HLog;
 import com.nantian.utils.Setting;
 
 public class UIManager {
@@ -72,7 +72,7 @@ public class UIManager {
 					break;
 				case SET_SIGN_BG_COLOR:
 					if (signDialog != null) {
-						Log.e("", "SET_SIGN_BG_COLOR");
+						HLog.e("", "SET_SIGN_BG_COLOR");
 						signDialog.setSignBackgroudColor((Integer) msg.obj);
 					}
 					break;
