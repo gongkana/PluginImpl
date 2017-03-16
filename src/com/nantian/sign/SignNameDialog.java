@@ -149,7 +149,10 @@ public class SignNameDialog extends Dialog {
 	}
 	
 	public String saveSignPic() throws Exception{
-		File dir = new File(Environment.getExternalStorageDirectory()+File.separator+"Nantian","Temp");
+		File dir = new File(Environment.getExternalStorageDirectory()+File.separator+"Nantian/Temp","sign");
+		if(!dir.exists()){
+			dir.mkdir();
+		}
 		Utils.savaBitmap(dir, SIGN_PICTURE_NAME, mSlate.getSignatureBitmap());
 		return dir.getAbsolutePath()+File.separator+SIGN_PICTURE_NAME;
 	}

@@ -21,7 +21,9 @@ import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 
+import com.nantian.ad.PlayerFragment;
 import com.nantian.sign.SignNameDialog;
 import com.nantian.utils.Setting;
 import com.van.paperless.R;
@@ -37,72 +39,18 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-        //dialog = new SignNameDialog(this,300,300);
-        hander = new Handler(){
-            @Override
-            public void dispatchMessage(Message msg) {
-                super.dispatchMessage(msg);
-               // dialog.show();
-            }
-        };
         Setting.instance().setContext(this);
-        //dialog = new SignNameDialog(this, 150, 150, 500, 600);
-       // hander.sendEmptyMessage(1);
-        edit = (EditText) findViewById(R.id.editText);
-        pluginHandler = new PluginHandler();
-   
-        pluginHandler.setContext(this);
-        //dialog = new SignNameDialog(this,20,100,300,400);
-        
-      
-        findViewById(R.id.action).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-         
-            	try {
-
-            	JSONObject json = new JSONObject(edit.getText().toString());
-            	final String tag = json.optString("cmd");
-            	final String data = json.optString("data","{}");
-                new Thread(){
-                	public void run() {
-                		try {
-							pluginHandler.execute(tag,new JSONObject(data));
-						} catch (JSONException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
-                	};
-                }.start();
-					
-				} catch (JSONException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			
     
-            
-            }
-        });
-
+        setContentView(R.layout.activity_main);
+        PlayerFragment fragment = new PlayerFragment();
+        getFragmentManager().beginTransaction().replace(R.id.frame, fragment).commit();
+        //dialog = new SignNameDialog(this,300,300)
 
     }
     @Override
     public void onBackPressed() {
     	// TODO Auto-generated method stub
     	super.onBackPressed();
-    	JSONObject json;
-		try {
-			json = new JSONObject("{\"cmd\":\"dismissSign\",\"fileName\":\"ImplPlugin.apk\"}");
-	    	String tag = json.optString("cmd");
-	    	String data = json.optString("data","{}");
-	        
-				pluginHandler.execute(tag,new JSONObject(data));
-		} catch (JSONException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 
     }
     

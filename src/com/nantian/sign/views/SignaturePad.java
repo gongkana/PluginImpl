@@ -160,7 +160,8 @@ public class SignaturePad extends View {
                 if (tracker.length() == 0){
                 	tracker.append(getWidth()+","+getHeight()+","+"P1280");
                 }
-                tracker.append("("+eventX+","+eventY+","+event.getPressure()+";");
+                tracker.append("("+String.format("%.2f", eventX)+","+String.format("%.2f", eventY)+
+                		","+String.format("%.2f",event.getPressure())+";");
                 mPoints.clear();
                 mLastTouchX = eventX;
                 mLastTouchY = eventY;
@@ -179,12 +180,14 @@ public class SignaturePad extends View {
                         resetDirtyRect(x, y);
                         TimedPoint p = getNewPoint(x, y,event.getHistoricalPressure(0),event.getHistoricalEventTime(0));
                         addPoint(p);
-                        tracker.append(x+","+y+","+event.getHistoricalPressure(0)+";");
+                        tracker.append("("+String.format("%.2f", x)+","+String.format("%.2f", y)+
+                        		","+String.format("%.2f",event.getHistoricalPressure(0))+";");
                         prePoint = p;
                     }
 
                 }
-                tracker.append(eventX+","+eventY+","+event.getPressure()+";");
+                tracker.append("("+String.format("%.2f", eventX)+","+String.format("%.2f", eventY)+
+                		","+String.format("%.2f",event.getPressure())+";");
                 resetDirtyRect(eventX, eventY);
                 addPoint(getNewPoint(eventX, eventY,event.getPressure(),event.getEventTime()));
                 break;

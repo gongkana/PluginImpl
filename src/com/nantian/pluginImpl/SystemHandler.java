@@ -1,11 +1,16 @@
 package com.nantian.pluginImpl;
 
+import java.io.File;
 import java.lang.reflect.Method;
 import java.net.URLEncoder;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -20,7 +25,9 @@ import android.util.Log;
 import android.view.WindowManager;
 
 import com.nantian.utils.DeviceInfo;
+import com.nantian.utils.HLog;
 import com.nantian.utils.Setting;
+import com.nantian.utils.Utils;
 import com.nantian.utils.VanRequest;
 
 public class SystemHandler {
@@ -30,26 +37,30 @@ public class SystemHandler {
 	private static SystemHandler instance;
 
 	private VanRequest mVanRequest;
-
 	private double BatteryV; // 电池电压
 
 	private double BatteryT; // 电池温度
 
+
 	private Context mContext;
 
+	private boolean isInit;
+	
 	private SystemHandler() {
 
 	}
 
 	public void init(Context context) {
+
 		this.mContext = context;
 		mContext.registerReceiver(mBroadcastReceiver, new IntentFilter(
 				Intent.ACTION_BATTERY_CHANGED));
 	}
 
-	public void destroy() {
+	public void destory(){
 		mContext.unregisterReceiver(mBroadcastReceiver);
 	}
+
 
 	public static SystemHandler instance() {
 		if (instance == null) {
@@ -150,7 +161,52 @@ public class SystemHandler {
 
 	}
 
-	public String getDeviceMes() throws Exception {
+	
+
+	public boolean synchronousTime(String timeString) throws Exception {
+		boolean isSuccess = false;
+		Pattern pattern = Pattern.compile("^[0-9]*$");
+		Matcher mathcer = pattern.matcher(timeString);
+		if (timeString.length() == 14 && mathcer.matches()) {
+			Intent intent = new Intent("unistrong.intent.action.SYS_CMD");
+			intent.putExtra("CMD", "UPDATE_TIME");
+			long time = new SimpleDateFormat("yyyyMMddHHmmss")
+					.parse(timeString).getTime();
+			intent.putExtra("time", time);
+			mContext.sendBroadcast(intent);
+			isSuccess = true;
+		}
+		return isSuccess;
+	}
+	
+	public JSONObject getFileInfo(String path) throws JSONException{
+		JSONObject json = new JSONObject();
+		File file = new File(path);
+		if (file.exists()){
+			
+			json.put("name", file.getName());
+			json.put("size", file.length()/1024+"kb");
+			json.put("MD5", Utils.getFileMD5(file));		
+			long time = file.lastModified();//返回文件最后修改时间，是以个long型毫秒数
+			String ctime = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(new Date(time));
+			json.put("lastModifyTime",ctime);
+			
+		}else{
+			json.put("msg", path+", 文件不存在");
+		}
+		return json;
+	}
+	
+	private BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
+		public void onReceive(Context context, Intent intent) {
+			String action = intent.getAction();
+			if (Intent.ACTION_BATTERY_CHANGED.equals(action)) {
+				BatteryV = intent.getIntExtra("voltage", 0); // 电池电压
+				BatteryT = intent.getIntExtra("temperature", 0); // 电池温度
+			}
+		}
+	};
+	public void getDeviceMes(JSONObject json) throws Exception {
 		DisplayMetrics displayMetrics = mContext.getResources()
 				.getDisplayMetrics();
 		WindowManager wm = (WindowManager) mContext
@@ -179,8 +235,10 @@ public class SystemHandler {
 		String Flashavail = String.format("%.2f", availInMem / (1024 * 1024.0));
 		String vid = "0x1DFC";
 		String pid = "0x8810";
+		/**
 		String formator = "CPU=%s&MEM_TOT=%s&MEM_AVAIL=%s&FLASH_TOT=%s&FLASH_AVAIL=%s"
 				+ "&VER=%s&VOLTAGE=%s&TEMPERATURE=%s&SCREEN_PIXEL=%s&VID=%s&PID=%s";
+				*/
 		/**
 		 * String infos = String.format(formator,
 		 * URLEncoder.encode(String.valueOf(cpuRate), "GBK") ,
@@ -204,6 +262,19 @@ public class SystemHandler {
 		// + displayMetrics.heightPixels + "&VID=0x1DFC&PID=0x8810";
 		// String infos = String.format(formator,
 		// URLEncoder.encode(String.valueOf(DeviceInfo.getCpuRate()), "utf-8"),)
+		json.put("CPU", String.valueOf(cpuRate));
+		json.put("MEM_TOT", MemTotal);
+		json.put("MEM_AVAIL",Memavail);
+		json.put("FLASH_TOT", Flashtot);
+		json.put("FLASH_AVAIL",Flashavail);
+		json.put("VER", DeviceInfo.getLocalVersionCode(mContext));
+		json.put("VOLTAGE", String.valueOf(BatteryV / 1000) + "V");
+		json.put("TEMPERATURE", String.valueOf(battery / 10) + "℃");
+		json.put("SCREEN_PIXEL", displayMetrics.widthPixels + "*"
+				+ displayMetrics.heightPixels);
+		json.put("VID", vid);
+		json.put("PID", pid);
+		/*
 		String infos = String.format(formator, URLEncoder.encode(
 				String.valueOf(cpuRate), "utf-8"), URLEncoder.encode(MemTotal,
 				"utf-8"), URLEncoder.encode(Memavail, "utf-8"), URLEncoder
@@ -216,33 +287,8 @@ public class SystemHandler {
 						+ displayMetrics.heightPixels, "utf-8"), URLEncoder
 						.encode(vid, "utf-8"), URLEncoder.encode(pid, "utf-8"));
 		// infos = URLEncoder.encode(infos, "utf-8");
-		return infos;
-	}
-
-	private BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
-		public void onReceive(Context context, Intent intent) {
-			String action = intent.getAction();
-			if (Intent.ACTION_BATTERY_CHANGED.equals(action)) {
-				BatteryV = intent.getIntExtra("voltage", 0); // 电池电压
-				BatteryT = intent.getIntExtra("temperature", 0); // 电池温度
-			}
-		}
-	};
-
-	public boolean synchronousTime(String timeString) throws Exception {
-		boolean isSuccess = false;
-		Pattern pattern = Pattern.compile("^[0-9]*$");
-		Matcher mathcer = pattern.matcher(timeString);
-		if (timeString.length() == 14 && mathcer.matches()) {
-			Intent intent = new Intent("unistrong.intent.action.SYS_CMD");
-			intent.putExtra("CMD", "UPDATE_TIME");
-			long time = new SimpleDateFormat("yyyyMMddHHmmss")
-					.parse(timeString).getTime();
-			intent.putExtra("time", time);
-			mContext.sendBroadcast(intent);
-			isSuccess = true;
-		}
-		return isSuccess;
+		 **/
+	
 	}
 
 }

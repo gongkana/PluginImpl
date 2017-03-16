@@ -17,8 +17,8 @@ public class VanKeyboard implements Runnable{
 	public static final String DOT = ".".trim();
 	public static final int KEY_PWD = 42;
 	public static final int KEY_OK = 0x0D;
-	public static final int KEY_CANCEL = 0x1B;
-	public static final int KEY_MOTIFY = 0x08;
+	public static final int KEY_CANCEL = 0x08;
+	public static final int KEY_MOTIFY = 0x0B;
 	public static final int KEY_PAGEUP = 0x44;
 	public static final int KEY_PAGEDOWN = 0x45;
 	public static final int KEY_DOT = 0x2E;// 小数点
@@ -463,9 +463,11 @@ public class VanKeyboard implements Runnable{
 	 * @param key
 	 */
 	private void setKeyValue(int key) {
-		if (this.onClickListener == null) {
-			return;
+		Log.e("", "Vanboard key = "+key);
+		if (onClickListener != null) {
+			onClickListener.onKey(key);
 		}
+		
 		//Logger.getLogger().i("onKey value: " + key);
 
 		/**
@@ -480,42 +482,25 @@ public class VanKeyboard implements Runnable{
 	}
 
 
-	public void dispatchMessage(Message msg) {
-		switch (msg.what) {
-		case MSG_CLICK_NUMBER:
-			// VoicePlayer.playKeyTone(VOLUME_KEYTONE);
-			onClickListener.clickNumberKey((char) msg.arg1);
-			break;
-		case MSG_CLICK_UNNUMBER:
-			if (msg.arg1 != 14) {
-				//VoicePlayer.playKeyTone(VOLUME_KEYTONE);
-				onClickListener.clickUnnumberKey(msg.arg1);
-			} else {
-			}
-			break;
-		default:
-			break;
-		}
-	}
-
 	@Override
 	public void run() {
-		byte[] buf = new byte[16];
+		byte[] buf = new byte[8];
 		mBufLen = 0;
 
 		while (!isStopThread) {
 			try {
-				int length = mUartManager.read(buf, buf.length, 180, 0);
-
+				int length = mUartManager.read(buf, buf.length, 100, 0);
+				
 				if (length > 0) {
+					/**
 					if (mBufLen + length > mBuffer.length) {
 						mBufLen = 0;
 					}
 
 					System.arraycopy(buf, 0, mBuffer, mBufLen, length);
 					mBufLen += length;
-
-					searchKey();
+					*/
+					setKeyValue(buf[0]);
 				}
 			} catch (Exception e) {
 				//LogUtil.e(TAG, e.toString(), new Exception());
@@ -552,21 +537,7 @@ public class VanKeyboard implements Runnable{
 	}
 
 	public interface OnClickListener {
-		/**
-		 * 点击数字按键
-		 * 
-		 * @param numberValue
-		 *            被点击的数字键的值
-		 */
-		public void clickNumberKey(char numberValue);
-
-		/**
-		 * 点击确定、取消、上页等非数字按键
-		 * 
-		 * @param unnumberKey
-		 *            被点击的非数字键
-		 */
-		public void clickUnnumberKey(int unnumberKey);
+		public void onKey(int key);
 	}
 	
 	public void release(){

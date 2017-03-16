@@ -23,6 +23,7 @@ import com.itextpdf.text.DocumentException;
 import com.itextpdf.text.Font;
 import com.itextpdf.text.FontFactory;
 import com.itextpdf.text.FontProvider;
+import com.itextpdf.text.Header;
 import com.itextpdf.text.Image;
 import com.itextpdf.text.Rectangle;
 import com.itextpdf.text.pdf.BaseFont;
@@ -45,7 +46,7 @@ import com.nantian.utils.HLog;
 
 public class PDFCenter {
 
-	public static boolean createPDF(String rawHTML, String fileName) {
+	public static boolean createPDF(String rawHTML, String fileName,String hender) {
 
 		File file = new File(fileName);
 		HLog.e("","fileName = "+fileName);
@@ -54,10 +55,14 @@ public class PDFCenter {
 			if (file.exists()) {
 				file.delete();
 			}
+			if (!file.getParentFile().exists()){
+				file.getParentFile().mkdir();
+			}
 			Document document = new Document();
 			PdfWriter writer = PdfWriter.getInstance(document,
 					new FileOutputStream(file));
 			document.open();
+			document.add(new Header("signPath", hender));
 			// HTML
 			// String htmlText = Jsoup.clean(rawHTML, Whitelist.relaxed());
 			InputStream inputStream = new ByteArrayInputStream(
@@ -165,7 +170,7 @@ public class PDFCenter {
         PdfStamper stamper = PdfStamper.createSignature(reader, os, '\0');
         // Creating the appearance
         PdfSignatureAppearance appearance = stamper.getSignatureAppearance();
-        appearance.setReason(signInfo.getReason());
+       // appearance.setReason(signInfo.getReason());
         appearance.setLocation("this is the location");
         Image img = Image.getInstance(markImagePath);
         

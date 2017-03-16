@@ -73,8 +73,8 @@ public class PasswordHandler {
 	}
 	
 	/**恢复出厂密钥*/
-	public void resetKey() {
-		Setting.instance().setMainKey(null, -1);
+	public void resetKey(int index) {
+		Setting.instance().setMainKey(null, index);
 	}
 	
 	/**初始化主密钥
@@ -191,7 +191,7 @@ public class PasswordHandler {
 		if(aclen>=13){
 			newAcc = account.substring(aclen-13,aclen-1);
 		} else{
-			while (newAcc.length()<13) {
+			while (newAcc.length()<12) {
 				newAcc = "0"+newAcc;
 			}
 		}

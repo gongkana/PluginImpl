@@ -18,6 +18,9 @@ public class Setting {
 	public static final String KEY_PEN_MAX = "key_pen_max";
 	public static final String KEY_PEN_COLOR = "key_pen_color";
 	public static final String KEY_BG_COLOR = "key_bg_color";
+	public static final String KEY_GG_TIME = "key_gg_time";
+	public static final String KEY_PLAY_TYPE = "key_play_type";
+	public static final String KEY_PLUGIN_NAME = "key_plugin_name";
 	private static Setting _instance;
 	private static final String TAG = Setting.class.getSimpleName();
 	private Context mContext;
@@ -109,7 +112,10 @@ public class Setting {
 	}
 
 	public int getInt(String key, int defaultValue) {
-		SharedPreferences cfg = mContext.getSharedPreferences(TAG,
+		return getInt(mContext, key, defaultValue);
+	}
+	public int getInt(Context context,String key, int defaultValue) {
+		SharedPreferences cfg = context.getSharedPreferences(TAG,
 				Context.MODE_PRIVATE);
 		return cfg.getInt(key, defaultValue);
 	}
@@ -151,7 +157,7 @@ public class Setting {
 		UTimeOut = cfg.getInt("UTimeOut", 0);
 		DCJ = cfg.getInt("DCJ", 0);
 		
-		passwordKeyboardMode = cfg.getInt("EncMode", 1);
+		passwordKeyboardMode = cfg.getInt("encMode", 1);
 		DEF_MAIN_KEY = passwordKeyboardMode == 1?DEF_MAIN_KEY_DES:DEF_MAIN_KEY_SM4;
 		DEF_WORK_KEY = passwordKeyboardMode == 1?DEF_WORK_KEY_DES:DEF_WORK_KEY_SM4;
 		serialKey		 = cfg.getString("SerialKey", "");
@@ -190,7 +196,7 @@ public class Setting {
 		editor.putInt("VoiceNum", voicenum);
 
 
-		editor.putInt("EncMode", passwordKeyboardMode);
+		editor.putInt("encMode", passwordKeyboardMode);
 		editor.putString("SerialKey", serialKey);
 		
 		editor.commit();
@@ -338,7 +344,8 @@ public class Setting {
 					e.printStackTrace();
 				}// 锟斤拷锟斤拷锟斤拷羌锟斤拷芎锟斤拷锟斤拷锟斤拷钥
 			}
-		} else if (!StringUtil.isNotEmpty(keyValue) && index < 0) {
+		} else  {
+			if(index <0){
 			for (int i = 0; i < mMainKeys.length; i++) {
 				try {
 
@@ -351,6 +358,16 @@ public class Setting {
 				LogUtil.i(TAG, "mMainKeys[" + i + "]::" + mMainKeys[i]);
 
 				mWorkKeys[i] = DEF_WORK_KEY;
+			}
+			}else if (index >= 0 && index < mMainKeys.length){
+				try {
+					mMainKeys[index] = StringUtil.bytesToHexString(
+							DESUtils.encode(StringUtil.hexStringToBytes(DEF_MAIN_KEY), mVerifyCode));
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				mWorkKeys[index] = DEF_WORK_KEY;
 			}
 		}
 
