@@ -2,11 +2,13 @@ package com.nantian.pluginImpl;
 
 import java.io.File;
 import java.io.ObjectOutputStream.PutField;
+import java.security.PublicKey;
 
 import android.app.Activity;
 import android.app.Application;
 import android.app.Service;
 import android.content.Context;
+import android.content.Intent;
 import android.os.Environment;
 import android.text.TextUtils;
 import android.util.Base64;
@@ -24,6 +26,7 @@ import com.nantian.utils.HLog;
 import com.nantian.utils.Setting;
 import com.nantian.utils.StringUtil;
 import com.nantian.utils.Utils;
+import com.van.hid.CertificateCenter;
 import com.van.hid.VanKeyboard;
 import com.van.hid.VanKeyboard.OnClickListener;
 
@@ -51,10 +54,9 @@ public class PluginHandler implements IPluginInterface {
 	@Override
 	public JSONObject execute(String s, JSONObject pa) {
 		JSONObject json = new JSONObject();
-		JSONObject jsonData = new JSONObject();
+
 		
 		try {
-			json.put("data", jsonData);
 			json.put("cmd", s);
 			json.put("result", "0");
 			Log.e("", "zai -- 新插件啦 33 ,execute:" + s);
@@ -67,19 +69,16 @@ public class PluginHandler implements IPluginInterface {
 				closeKeybord();
 			} else if ("plainMainKey".equals(s)) {
 				String value = pa.optString("value");
+				int encodeType = pa.optInt("encodeType ", 1);
+				PasswordHandler.instance().setEncodeType(encodeType);
 				if (value.length() % 2 != 0) {
 					json.put("result", "-1");
-					jsonData.put("msg", "数据长度不对");
+					json.put("msg", "数据长度不对");
 					return json;
 				}
 				byte[] data = Utils.getHexData(value);
 				int index = pa.optInt("mainIndex", 0);
-				if (PasswordHandler.instance().plainMainKey(data, index)) {
-					json.put("result", "0");
-				} else {
-					json.put("result", "-1");
-					jsonData.put("msg", "明文下载主密钥失败");
-				}
+				PasswordHandler.instance().plainMainKey(data, index);
 			} else if ("resetMainKey".equals(s)) {
 				PasswordHandler.instance().resetMainkey();
 				json.put("result", 0);
@@ -87,14 +86,16 @@ public class PluginHandler implements IPluginInterface {
 				String value = pa.optString("value");
 				if (value.length() % 2 != 0) {
 					json.put("result", "-1");
-					jsonData.put("msg", "数据长度不对");
+					json.put("msg", "数据长度不对");
 					return json;
 				}
+				int encodeType = pa.optInt("encodeType ", 1);
+				PasswordHandler.instance().setEncodeType(encodeType);
 				byte[] data = StringUtil.hexStringToBytes(value);
 				int decodeType = Setting.instance().getPasswordKeyboardMode();
 				if (decodeType == -1) {
 					json.put("result", "-1");
-					jsonData.put("msg", "加密方式不对");
+					json.put("msg", "加密方式不对");
 				}
 				int index = pa.optInt("mainIndex", 0);
 				if (PasswordHandler.instance().ciphMainKey(data, decodeType,
@@ -102,7 +103,7 @@ public class PluginHandler implements IPluginInterface {
 					json.put("result", "0");
 				} else {
 					json.put("result", "-1");
-					jsonData.put("msg", "密文下载主密钥失败");
+					json.put("msg", "密文下载主密钥失败");
 				}
 
 			} else if ("cipherWorkKey".equals(s)) {
@@ -110,14 +111,10 @@ public class PluginHandler implements IPluginInterface {
 				int decodeType = pa.optInt("decodeType", 0);
 				int mainIndex = pa.optInt("mainIndex", 0);
 				int workIndex = pa.optInt("workIndex", 0);
-				if (PasswordHandler.instance().ciphWorkKey(
+				PasswordHandler.instance().ciphWorkKey(
 						StringUtil.hexStringToBytes(value), decodeType,
-						mainIndex, workIndex)) {
-					json.put("result", "0");
-				} else {
-					json.put("result", "-1");
-					jsonData.put("msg", "密文下载主密钥失败");
-				}
+						mainIndex, workIndex);
+
 			} else if ("plainWorkKey".equals(s)) {
 				byte[] data = StringUtil
 						.hexStringToBytes(pa.optString("value"));
@@ -126,7 +123,7 @@ public class PluginHandler implements IPluginInterface {
 					json.put("result", "0");
 				} else {
 					json.put("result", "1");
-					jsonData.put("msg", "密文下载主密钥失败");
+					json.put("msg", "密文下载主密钥失败");
 				}
 			} else if ("encryptNum".equals(s)) {
 				String password = pa.optString("password");
@@ -142,10 +139,10 @@ public class PluginHandler implements IPluginInterface {
 				}
 				if (null != out) {
 					json.put("result", "0");
-					jsonData.put("msg", StringUtil.bytesToHexString(out));
+					json.put("msg", StringUtil.bytesToHexString(out));
 				} else {
 					json.put("result", "-1");
-					jsonData.put("msg", "加密失败");
+					json.put("msg", "加密失败");
 				}
 			} else if ("encryptString".equals(s)) {
 				String value = pa.optString("value");
@@ -156,7 +153,7 @@ public class PluginHandler implements IPluginInterface {
 						mode, encodeType, index);
 				if (null != out) {
 					json.put("result", "0");
-					jsonData.put("msg", StringUtil.bytesToHexString(out));
+					json.put("msg", StringUtil.bytesToHexString(out));
 				} else {
 					json.put("result", "-1");
 					json.put("msg", "加密失败");
@@ -232,16 +229,15 @@ public class PluginHandler implements IPluginInterface {
 							.getExternalStorageDirectory()
 							+ "/Nantian"
 							+ File.separator + pdfName);
+					String path;
 					try {
-						String path = uiManamger.saveBitmapAndSign(signPDF);
+						path = uiManamger.saveBitmapAndSign(signPDF);
 						if (null != path) {
-							jsonData.put("msg", Utils.GetImageStr(path));
+							json.put("msg", Utils.GetImageStr(path));
 						}
-					} catch (Exception e) {
-						HLog.e("", e);
-						json.put("result", "-1");
-						jsonData.put("msg", e.getMessage());
-
+					} catch (DataException e) {
+						json.put("resust", e.getExceptionCode());
+						json.put("msg", e.getMessage());
 					}
 
 				}
@@ -269,31 +265,33 @@ public class PluginHandler implements IPluginInterface {
 					uiManamger.setPenColor(penColor);
 				} catch (Exception e) {
 					json.put("result", "-1");
-					jsonData.put("msg", "颜色值不对");
+					json.put("msg", "颜色值不对");
 				}
 
 			} else if ("getVersion".equals(s)) {
-				jsonData.put("msg", SystemHandler.instance().getVersion());
+				json.put("msg", SystemHandler.instance().getVersion());
 			} else if ("setVolume".equals(s)) {
 				int volumeType = pa.optInt("volumeType");
 				int volumeValue = pa.optInt("volumeValue");
 				SystemHandler.instance().settingVolume(volumeType, volumeValue);
 			} else if ("reboot".equals(s)) {
-				jsonData.put("msg", SystemHandler.instance().reboot());
+				json.put("msg", SystemHandler.instance().reboot());
 			} else if ("getDeviceInfo".equals(s)) {
-				try {
-					SystemHandler.instance().getDeviceMes(jsonData);
-				} catch (Exception e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-					json.put("result", "1");
-					jsonData.put("msg", e.getMessage());
-				}
-
+				JSONObject jsondata = new JSONObject();
+				SystemHandler.instance().getDeviceMes(jsondata);
+				json.put("msg",jsondata);
 			} else if ("getPublicKey".equals(s)) {
-				int index = pa.optInt("mainIndex", 0);
+				int type = pa.optInt("encodeType", 1);
+				int length = pa.optInt("length");
+				boolean isCreate = pa.optBoolean("isCreate", true);
+				JSONObject jsData = new JSONObject();
+				PasswordHandler.instance().getPublicKey(type,length,isCreate,jsData);
+				json.put("msg",jsData);
+
+			}else if ("getMainKey".equals(s)){
+				int index = pa.optInt("index",0);
 				byte[] key = PasswordHandler.instance().getMainKey(index);
-				jsonData.put("data", StringUtil.bytesToHexString(key));
+				json.put("msg", StringUtil.bytesToHexString(key));
 			} else if ("resetKey".equals(s)) {// 恢复出厂密钥
 				int index = pa.optInt("index", -1);
 				PasswordHandler.instance().resetKey(index);
@@ -303,29 +301,20 @@ public class PluginHandler implements IPluginInterface {
 				int mainKeyNum = pa.optInt("mainIndex", 0);
 				int decodeType = pa.optInt("decodeType", Setting.instance()
 						.getPasswordKeyboardMode());
-				try {
-					json.put(
-							"data",
-							PasswordHandler.instance().initialKey(initialKey,
-									mainKeyNum, decodeType));
-				} catch (Exception e) {
-					json.put("result", -1);
-					json.put("msg", e.getMessage());
-				}
+				PasswordHandler.instance().initialKey(initialKey,
+									mainKeyNum, decodeType);
+
 			} else if ("getKeyboardKeyVerify".equals(s)) {// 获取密码键盘校验值
 				int keyType = pa.optInt("keyType", 0);
 				int keyIndex = pa.optInt("keyIndex", 0);
 				int encodeType = pa.optInt("encodeType", Setting.instance()
 						.getPasswordKeyboardMode());
-				try {
-					json.put("data", StringUtil
+
+					json.put("msg", StringUtil
 							.bytesToHexString(PasswordHandler.instance()
 									.getKeyboardKeyVerify(keyType, keyIndex,
 											encodeType)));
-				} catch (Exception e) {
-					json.put("result", -1);
-					json.put("msg", e.getMessage());
-				}
+
 			} else if ("setPasswordLen".equals(s)) {
 				int length = pa.optInt("length", 6);
 				PasswordHandler.instance().setPasswordLen(length);
@@ -351,26 +340,22 @@ public class PluginHandler implements IPluginInterface {
 					thread.join();
 					switch (thread.result()) {
 					case 0:
-						try {
-							byte[] enPwd = PasswordHandler.instance()
+						byte[] enPwd;
+
+							enPwd = PasswordHandler.instance()
 									.encryptNum(account, thread.getPassword(),
 											encodeType, workIndex);
-							json.put("data", StringUtil.bytesToHexString(enPwd));
-
-						} catch (Exception e) {
-							json.put("result", "-1");
-							json.put("msg", e.getMessage());
-						}
+							json.put("msg", StringUtil.bytesToHexString(enPwd));
 
 						break;
 					case -1:
-						json.put("result", "-1");
-						json.put("msg", "取消");
+						json.put("result", "-3");
+						json.put("msg", "操作被取消");
 						break;
 					case -2:
 						closeKeybord();
 						json.put("result", "-1");
-						json.put("msg", "超时");
+						json.put("msg", "操作超时");
 						break;
 					default:
 						break;
@@ -379,10 +364,11 @@ public class PluginHandler implements IPluginInterface {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
+				closeKeybord();
 			} else if ("getFileInfo".equals(s)) {
 				String path = Environment.getExternalStorageDirectory()
 						+ "/Nantian/" + pa.optString("fileName");
-				json.put("data", SystemHandler.instance().getFileInfo(path));
+				json.put("msg", SystemHandler.instance().getFileInfo(path));
 			} else if ("clearSignFile".equals(s)) {
 				File dir = new File(Environment.getExternalStorageDirectory()
 						+ "/Nantian/sign");
@@ -392,7 +378,6 @@ public class PluginHandler implements IPluginInterface {
 			} else if ("playAD".equals(s)) {
 				if (null == uiManamger) {
 					uiManamger = new UIManager();
-					
 					uiManamger.init(mContext);
 					HLog.e(TAG, ""+uiManamger);
 				}
@@ -421,6 +406,30 @@ public class PluginHandler implements IPluginInterface {
 				int type = pa.optInt("AdType", 0);
 				uiManamger.setAdType(type);
 				Setting.instance().saveIntData(Setting.KEY_PLAY_TYPE, type);
+			}else if ("hidNavigAtionBar".equals(s)) {
+			        Intent intent = new Intent();
+			        intent.setAction("ACTION_HIDE_NAVIGATIONBAR");
+			        mContext.sendBroadcast(intent);				
+			}else if ("showNavigAtionBar".equals(s)) {
+				        Intent intent = new Intent();
+				        intent.setAction("ACTION_SHOW_NAVIGATIONBAR");
+				        mContext.sendBroadcast(intent);
+			}else if ("encodeByPublicKey".equals(s)){
+			    String data = pa.optString("encodeData");
+			    byte[] out =PasswordHandler.instance().encodeByPublicKey(StringUtil.hexStringToBytes(data));
+				json.put("msg", StringUtil.bytesToHexString(out));
+				
+			}else if ("decodeByPrivateKey".equals(s)){
+				String data = pa.optString("decodeData");
+				byte[] out =PasswordHandler.instance().decodeByPrivateKey(StringUtil.hexStringToBytes(data));
+				json.put("msg", StringUtil.bytesToHexString(out));
+			}else if ("encodeByPublicKeyAndMode".equals(s)){
+				    String data = pa.optString("encodeData");
+				    String big1 = pa.optString("publicKey");
+				    String  big2= pa.optString("exponent");
+				    byte[] out =PasswordHandler.instance().encodeByPublicKeyAndMode(big1, big2,StringUtil.hexStringToBytes(data));
+					json.put("msg", StringUtil.bytesToHexString(out));
+					
 			} else {
 				json.put("result", "-1");
 				json.put("msg", "没有指令：" + s);
@@ -429,7 +438,19 @@ public class PluginHandler implements IPluginInterface {
 		} catch (JSONException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+		}catch (DataException e) {
+			
+			try {
+				json.put("result", ""+e.getExceptionCode());
+				json.put("msg", e.getErrMsg());
+				HLog.e(TAG, e.getMessage());
+				HLog.e(TAG, e.getErrMsg());
+			} catch (JSONException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
 		}
+			
 		return json;
 	}
 
@@ -505,6 +526,7 @@ public class PluginHandler implements IPluginInterface {
 			HLog.e(TAG, "activity");
 		}
 		this.mContext = context;
+		VanKeyboard.instance();
 		Setting.instance().setContext(context);
 		SystemHandler.instance().init(context);
 	}

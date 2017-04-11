@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -13,10 +14,12 @@ import java.io.OutputStream;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 import org.bouncycastle.util.encoders.Base64Encoder;
 
 import com.nantian.ad.DetailFile.MediaType;
+import com.nantian.pluginImpl.DataException;
 
 import android.content.Context;
 import android.content.res.AssetManager;
@@ -88,18 +91,24 @@ public class Utils {
 	}
 
 	@SuppressWarnings("resource")
-	public static String getFileMD5(File file) {
-		try {
-			MessageDigest messageDigest = MessageDigest.getInstance("MD5");
-			FileInputStream in = new FileInputStream(file);
-			FileChannel ch = in.getChannel();
-			MappedByteBuffer byteBuffer = ch.map(FileChannel.MapMode.READ_ONLY,
-					0, file.length());
-			messageDigest.update(byteBuffer);
-			return bufferToHex(messageDigest.digest());
-		} catch (Exception e) {
-			return null;
-		}
+	public static String getFileMD5(File file) throws DataException {
+	
+			try {
+				MessageDigest messageDigest = MessageDigest.getInstance("MD5");
+				FileInputStream in = new FileInputStream(file);
+				FileChannel ch = in.getChannel();
+				MappedByteBuffer byteBuffer = ch.map(FileChannel.MapMode.READ_ONLY,
+						0, file.length());
+				messageDigest.update(byteBuffer);
+				return bufferToHex(messageDigest.digest());
+			} catch (NoSuchAlgorithmException e) {
+				throw new DataException(-5, e);
+			} catch (FileNotFoundException e) {
+				throw new DataException(-5, "文件不存在",e);
+			} catch (IOException e) {
+				throw new DataException(-5, "IO异常",e);
+			}
+
 	}
 
 	private static String bufferToHex(byte bytes[]) {
@@ -154,11 +163,15 @@ public class Utils {
 		return sb.toString();
 	}
 
-	public static byte[] bitmapToByteArray(Bitmap bitmap) throws Exception {
+	public static byte[] bitmapToByteArray(Bitmap bitmap) throws DataException{
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		bitmap.compress(Bitmap.CompressFormat.PNG, 100, baos);
 		byte[] data = baos.toByteArray();
-		baos.close();
+		try {
+			baos.close();
+		} catch (IOException e) {
+			throw new DataException(-5,e);
+		}
 		return data;
 	}
 
@@ -178,16 +191,22 @@ public class Utils {
 		return Base64.encodeToString(data, Base64.DEFAULT); // 返回Base64编码过的字节数组字符串
 	}
 
-	public static void savaBitmap(File dir, String fileName, Bitmap bitmap)
-			throws Exception {
+	public static void savaBitmap(File dir, String fileName, Bitmap bitmap) throws DataException
+			{
 		saveInfo(dir, fileName, bitmapToByteArray(bitmap));
 	}
 
-	public static void saveInfo(File dir, String fileName, byte[] data)
-			throws Exception {
-		OutputStream out = new FileOutputStream(new File(dir, fileName.trim()));
-		out.write(data);
-		out.close();
+	public static void saveInfo(File dir, String fileName, byte[] data) throws DataException
+			 {
+		try {
+			OutputStream out = new FileOutputStream(new File(dir, fileName.trim()));
+			out.write(data);
+			out.close();
+		} catch (FileNotFoundException e) {
+			throw new DataException(-5);
+		} catch (IOException e) {
+			throw new DataException(-5);
+		}
 	}
 
 	public static boolean delete(File file) {
@@ -219,7 +238,7 @@ public class Utils {
 	}
 	
 	public static String getMediaTypeDir(MediaType type){
-		String path = Environment.getExternalStorageDirectory()+"/Nantian/Web/www/img/ad";
+		String path = Environment.getExternalStorageDirectory()+"/Nantian/Web/www/res/image";
 		switch (type) {
 		case TYPE_VIDEO:
 			path = Environment.getExternalStorageDirectory()+"/Nantian/Web/www/res/video";

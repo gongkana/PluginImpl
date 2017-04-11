@@ -7,16 +7,24 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
 import java.nio.charset.Charset;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.Security;
+import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import com.itextpdf.awt.geom.Rectangle2D;
+import com.itextpdf.text.BadElementException;
 import com.itextpdf.text.BaseColor;
 import com.itextpdf.text.Document;
 import com.itextpdf.text.DocumentException;
@@ -42,6 +50,7 @@ import com.itextpdf.text.pdf.security.MakeSignature;
 import com.itextpdf.text.pdf.security.PrivateKeySignature;
 import com.itextpdf.tool.xml.XMLWorkerHelper;
 import com.nantian.entity.SignPDF;
+import com.nantian.pluginImpl.DataException;
 import com.nantian.utils.HLog;
 
 public class PDFCenter {
@@ -144,62 +153,108 @@ public class PDFCenter {
      * @param markImagePath 签名图片路径
      * @param fieldName 签名域名称
      * @param passWord 数字证书密码
+     * @throws DataException 
      * @throws GeneralSecurityException
      * @throws IOException 密码错误会报IOException
      * @throws DocumentException
      */
-    public static void sign(String markImagePath,SignPDF signInfo)
-            throws GeneralSecurityException, IOException, DocumentException {
-        KeyStore ks = KeyStore.getInstance("pkcs12");
-        ks.load(new FileInputStream(signInfo.getKeySorePath()), signInfo.getPassword().toCharArray());
-        String alias = (String)ks.aliases().nextElement();
-        PrivateKey pk = (PrivateKey)ks.getKey(alias, signInfo.getPassword().toCharArray());
-        Certificate[] chain = ks.getCertificateChain(alias);
-        BouncyCastleProvider provider = new BouncyCastleProvider();
-        Security.addProvider(provider);
-        // Creating the reader and the stamper
-        HLog.e("", signInfo.toString());
-        PdfReader reader = new PdfReader(signInfo.getPdfPath());
-        
-        
-        Rectangle pageSize = reader.getPageSize(signInfo.getPageNum());
-        float width = pageSize.getWidth();
-        float height = pageSize.getHeight();
-        String tempPath = signInfo.getPdfPath().replace(".", "_new.");
-        FileOutputStream os = new FileOutputStream(tempPath);
-        PdfStamper stamper = PdfStamper.createSignature(reader, os, '\0');
-        // Creating the appearance
-        PdfSignatureAppearance appearance = stamper.getSignatureAppearance();
-       // appearance.setReason(signInfo.getReason());
-        appearance.setLocation("this is the location");
-        Image img = Image.getInstance(markImagePath);
-        
-        //float newHeight = (float) (signInfo.getHeight()*0.8f);
-        //float newWeight = (float) (signInfo.getWidth()*0.8f);
-        //img.scaleAbsolute(newWeight, newHeight);
-        
-        HLog.e("", "markImagePath...");
-        HLog.e("", signInfo.toString());
-        float[] start = getKeyWords(reader, signInfo.getPageNum());
-        HLog.e("", "x=="+start[0]+"---y=="+start[1]);
-        appearance.setVisibleSignature(
-        		new Rectangle(
-        				(float) start[0],
-        				(float) (start[1]-signInfo.getHeight()*0.8f),
-        				(float) (start[0]+signInfo.getWidth()*0.8f),
-        				(float) (start[1])),signInfo.getPageNum(),"Signature1");
-        // Custom text and background image
-        appearance.setLayer2Text("");
-        appearance.setImage(img);
-        appearance.setImageScale((float) ((signInfo.getWidth()*0.8f)/img.getWidth()));
-        // Creating the signature
-        PrivateKeySignature pks = new PrivateKeySignature(pk, DigestAlgorithms.SHA256, provider.getName());
-        ExternalDigest digest = new BouncyCastleDigest();
-        MakeSignature.signDetached(appearance, digest, pks, chain, null, null, null, 0, MakeSignature.CryptoStandard.CMS);
-        File srcFile = new File(signInfo.getPdfPath());
-        srcFile.delete();
-        File desFile = new File(tempPath);
-        desFile.renameTo(srcFile);
+    public static void sign(String markImagePath,SignPDF signInfo,String signTrack) throws DataException{
+        try {
+			KeyStore ks = KeyStore.getInstance("pkcs12");
+			ks.load(new FileInputStream(signInfo.getKeySorePath()), signInfo.getPassword().toCharArray());
+			String alias = (String)ks.aliases().nextElement();
+			PrivateKey pk = (PrivateKey)ks.getKey(alias, signInfo.getPassword().toCharArray());
+			Certificate[] chain = ks.getCertificateChain(alias);
+			BouncyCastleProvider provider = new BouncyCastleProvider();
+			Security.addProvider(provider);
+			// Creating the reader and the stamper
+			HLog.e("", signInfo.toString());
+			PdfReader reader = new PdfReader(signInfo.getPdfPath());
+			Rectangle pageSize = reader.getPageSize(signInfo.getPageNum());
+			String tempPath = signInfo.getPdfPath().replace(".", "_new.");
+			FileOutputStream os = new FileOutputStream(tempPath);
+			PdfStamper stamper = PdfStamper.createSignature(reader, os, '\0');
+			Map<String, String> signTrackMap = new HashMap<String, String>();
+			signTrackMap.put("signTrack", signTrack);
+			stamper.setMoreInfo(signTrackMap); 
+			// Creating the appearance
+			PdfSignatureAppearance appearance = stamper.getSignatureAppearance();
+      // appearance.setReason(signInfo.getReason());
+			appearance.setLocation("this is the location");
+			Image img = Image.getInstance(markImagePath);
+			
+			//float newHeight = (float) (signInfo.getHeight()*0.8f);
+			//float newWeight = (float) (signInfo.getWidth()*0.8f);
+			//img.scaleAbsolute(newWeight, newHeight);
+			float pagewidth = pageSize.getWidth();
+			float pageheight = pageSize.getHeight();
+			float realWidth = (float) (pagewidth*signInfo.getWidth());
+			float realHeight = (float) (pageheight*signInfo.getHeight());
+			
+			HLog.e("", "markImagePath...");
+			HLog.e("", signInfo.toString());
+			float width = img.getWidth();
+			float height = img.getHeight();
+			if (width > realWidth){			
+				float tempHeight = (float) (height * realWidth/width);
+				if (tempHeight <= realHeight){
+					width = (float) realWidth;
+					height = tempHeight;
+				}else {		
+					width  =(float) (width * realHeight/height);
+					height = (float) realHeight;
+				}			
+			} else {
+				if (height > realHeight){
+					width = (float) (width * realHeight/height);
+					height = (float) realHeight;
+				}
+			}
+			float[] start = new float []{(float) signInfo.getPointX()*pagewidth,(float) (1-signInfo.getPointY())*pageheight};
+			appearance.setVisibleSignature(
+					new Rectangle(
+							(float) start[0],
+							(float) (start[1]-height),
+							(float) (start[0]+width),
+							(float) (start[1])),signInfo.getPageNum(),"Signature1");
+			// Custom text and background image
+			appearance.setLayer2Text("");
+			appearance.setImage(img);
+			float xScal = (float) (realWidth)/img.getWidth();
+			float yScal = (float) (realHeight)/img.getHeight();
+			float scal = xScal<yScal?xScal:yScal;
+			if (scal < 1){
+				appearance.setImageScale(scal);
+			}
+			// Creating the signature 后
+			PrivateKeySignature pks = new PrivateKeySignature(pk, DigestAlgorithms.SHA256, provider.getName());
+			ExternalDigest digest = new BouncyCastleDigest();
+			MakeSignature.signDetached(appearance, digest, pks, chain, null, null, null, 0, MakeSignature.CryptoStandard.CMS);
+			//File srcFile = new File(signInfo.getPdfPath());
+			//srcFile.delete();
+			//File desFile = new File(tempPath);
+			//desFile.renameTo(srcFile);
+		} catch (UnrecoverableKeyException e) {
+			throw new DataException(-5,e);
+		} catch (KeyStoreException e) {
+			throw new DataException(-205,e);
+		} catch (NoSuchAlgorithmException e) {
+			throw new DataException(-5,e);
+		} catch (CertificateException e) {
+			throw new DataException(-205);
+		} catch (FileNotFoundException e) {
+			throw new DataException(-204,e);
+		} catch (BadElementException e) {
+			throw new DataException(-5,e);
+		} catch (MalformedURLException e) {
+			throw new DataException(-5,e);
+		} catch (IOException e) {
+			throw new DataException(-5,e);
+		} catch (DocumentException e) {
+			throw new DataException(-201,e);
+		} catch (GeneralSecurityException e) {
+			throw new DataException(-5,e);
+		}
     }
     
     private static float[] getKeyWords(PdfReader pdfReader,int num) {

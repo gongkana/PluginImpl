@@ -1,16 +1,29 @@
 package com.nantian.pluginImpl;
 
+import java.security.InvalidKeyException;
+import java.security.NoSuchProviderException;
+import java.security.PublicKey;
+import java.security.SignatureException;
+import java.security.cert.CertificateEncodingException;
+import java.security.interfaces.RSAPublicKey;
 import java.util.Arrays;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import android.text.TextUtils;
+import android.util.Base64;
 import android.util.Log;
 
+import com.nantian.utils.HLog;
 import com.nantian.utils.LogUtil;
 import com.nantian.utils.Setting;
 import com.nantian.utils.StringUtil;
 import com.nantian.utils.Utils;
 import com.van.hid.DESUtils;
+import com.van.hid.CertificateCenter;
 import com.van.hid.SMS4;
+import com.van.hid.TKeyPair;
 
 
 public class PasswordHandler {
@@ -20,6 +33,8 @@ public class PasswordHandler {
 	private int type ;
 	
 	private static PasswordHandler instance;
+	
+	private TKeyPair keyPair;
 	
 	private PasswordHandler(){
 
@@ -31,34 +46,36 @@ public class PasswordHandler {
 		}
 		return instance;
 	}
-	//密码键盘  keyboard begin
-	
 
-	public boolean setEncreptMode(int mode){
-		boolean result = true;
-		Setting.instance().setPasswordKeyboardMode(mode);
-		return result;
-	}
 	
 	/**密文下载主密钥*/
 	public boolean ciphMainKey(byte[] data,int dencodeType,int mainIndex) {
 
 		try {
-
+			byte[] dst = null;
+			if (keyPair != null){
+				if (keyPair.getType() == 1){
+					dst = CertificateCenter.SM2decrypt(keyPair.getPriKey(), data);
+				}else{
+					dst = CertificateCenter.RSAdecryptByPrivateKey(keyPair.getPriKey(), data);
+				}
+			}else{
+			
 			byte[] key = Setting.instance().getMainKey(mainIndex);
 			LogUtil.i(TAG, "主密钥::" + Utils.getHexString(key,key.length));
-			byte[] dst = new byte[data.length];
+
 			if (dencodeType == 0) {
 				dst = SMS4.decodeSMS4(data, key);
 			} else if(dencodeType == 1){
 				dst = DESUtils.decode(data, key);
 			}else{
-				return false;
+				throw new DataException(-4);
 			}
 
+
+		}
 			String mainKey = Utils.getHexString(dst, dst.length);
 			Setting.instance().setMainKey(mainKey, mainIndex);
-
 			LogUtil.i(TAG, "主密钥::" + mainKey);
 			return true;
 		} catch (Exception e) {
@@ -67,8 +84,65 @@ public class PasswordHandler {
 		}
 	}
 	
-	/**获取主密钥*/
-	public byte[] getMainKey(int index){
+	public void getPublicKey(int encodeType,int length,boolean isCreate,JSONObject jsonOut)throws DataException, JSONException{
+		if (encodeType == 1){
+				if (!isCreate && null != keyPair && keyPair.getType() == encodeType){
+
+				}else {
+					keyPair = CertificateCenter.generateKeyPair();
+					keyPair.setType(encodeType);
+				}
+				jsonOut.put("publicKey", StringUtil.bytesToHexString(keyPair.getPubKey()));
+		}else if(encodeType == 2){
+			if (!isCreate && null != keyPair && keyPair.getType() == encodeType){
+
+			}else {
+				if (length%512 != 0 || length/512 > 4){
+					throw new DataException(-4,",长度参数不对："+length);
+				}
+				keyPair = CertificateCenter.RSAinitKey(length);
+				keyPair.setType(encodeType);
+			}
+		
+				RSAPublicKey pubKey = CertificateCenter.getRSAPublicKey(keyPair.getPubKey());
+				byte [] pubContent = pubKey.getModulus().toByteArray();
+				int keyLength = (int) Math.ceil(length/8.0);
+				byte [] pubOut = new byte[keyLength];
+				System.arraycopy(pubContent, pubContent.length-keyLength, pubOut, 0, keyLength);
+				jsonOut.put("publicKey", StringUtil.bytesToHexString(pubOut));
+				jsonOut.put("exponent", StringUtil.bytesToHexString(pubKey.getPublicExponent().toByteArray()));
+
+		}else{
+			throw new DataException(-4);
+		}
+	}
+	public byte[] encodeByPublicKey(byte[] data) throws DataException{
+		if (null == keyPair){
+			throw new DataException(-4, ",公钥为空");
+		}
+	    if (keyPair.getType() == 2){  
+	    	return CertificateCenter.RSAencryptByPublicKey(data,keyPair.getPubKey());
+	    } else if (keyPair.getType() == 1){
+
+	    	return CertificateCenter.SM2encrypt(keyPair.getPubKey(), data);
+	    }else {
+	    	throw new DataException(-4, ",没有此加密方式");
+	    }
+	}
+	public byte[] encodeByPublicKeyAndMode(String big1,String big2,byte[] data) throws DataException{
+		RSAPublicKey pub = CertificateCenter.getPublicKeyByBig(big1, big2);
+		return CertificateCenter.RSAencryptByPublicKey(data, pub);
+	}
+	public byte[] decodeByPrivateKey(byte[] data) throws DataException{
+		if (keyPair.getType() == 2){
+			return CertificateCenter.RSAdecryptByPrivateKey(data, keyPair.getPriKey());
+		}else{
+			return CertificateCenter.SM2decrypt(keyPair.getPriKey(), data);
+		}		
+	}
+	/**获取公钥
+	 * @throws DataException */
+	public byte[] getMainKey(int index) throws DataException{
 		return Setting.instance().getMainKey(index);
 	}
 	
@@ -78,8 +152,9 @@ public class PasswordHandler {
 	}
 	
 	/**初始化主密钥
+	 * @throws DataException 
 	 * @throws Exception */
-	public byte[] initialKey(byte[] initialKey,int mainKeyNum,int decodeType) throws Exception {
+	public byte[] initialKey(byte[] initialKey,int mainKeyNum,int decodeType) throws DataException  {
 		
 		byte[] mainKey ;
 		if (decodeType == 0){
@@ -98,16 +173,12 @@ public class PasswordHandler {
 	 * 	keyType  密钥类型：0-主密钥，1-工作密钥
 		keyIndex 密钥索引
 	 *  encodeType 加密方式 0-sm4,1-des
+	 * @throws DataException 
 	 * @throws Exception 
 	 * */
-	public byte[] getKeyboardKeyVerify(int keyType,int keyIndex,int encodeType) throws Exception {
+	public byte[] getKeyboardKeyVerify(int keyType,int keyIndex,int encodeType) throws DataException{
 	
-		byte[] src = new byte[16];
-		Arrays.fill(src, (byte) 0x30);
-		byte[] dst = new byte[16];
-		
-		Arrays.fill(dst, (byte) 0x00);
-		
+	HLog.e(TAG, "keyType = "+keyType+",keyIndex = "+keyIndex+",encodeType = "+encodeType);
 		byte[] strKey = (0 == keyType) ? Setting.instance().getMainKey(keyIndex)
 					: Setting.instance().getWorkKey(keyIndex);
 		
@@ -125,9 +196,9 @@ public class PasswordHandler {
 		return cvVerifyValue;
 	}
 
-	/**密文下载工作密钥*/
-	public boolean ciphWorkKey(byte[] data,int encodeType,int mainIndex,int workIndex) {
-		try {
+	/**密文下载工作密钥
+	 * @throws DataException */
+	public void ciphWorkKey(byte[] data,int encodeType,int mainIndex,int workIndex) throws DataException {
 
 			LogUtil.i(TAG, "密钥号::" + workIndex);
 			int len = data.length;// 工作密钥长度
@@ -144,25 +215,16 @@ public class PasswordHandler {
 			String workKey = Utils.getHexString(dst, dst.length);
 			Setting.instance().setWorkKey(workKey, workIndex);
 			LogUtil.e(TAG, "工作密钥::" + workKey);
-			return true;
-		} catch (Exception e) {
-			LogUtil.e(TAG, e.toString(), new Exception());
-			return false;
-		}
+
 	}
 	
 	/**明文下载主密钥*/
-	public boolean plainMainKey(byte[] data,int mainIndex) {
+	public void plainMainKey(byte[] data,int mainIndex) {
 		// Utils.showData(data, request.getLength());
-		try {
 			String mainKey = Utils.getHexString(data, data.length);
 			Setting.instance().setMainKey(mainKey, mainIndex);
 			LogUtil.i(TAG, "主密钥::" + mainKey);
-			return true;
-		} catch (Exception e) {
-			LogUtil.e(TAG, e.toString(), new Exception());
-			return false;
-		}
+
 	}
 
 	public boolean plainWorkKey(byte[] data,int workIndex) {
@@ -178,7 +240,7 @@ public class PasswordHandler {
 	}
 	
 
- public byte[] encryptNum(String account,String password,int encodeType,int workIndex) throws Exception{
+ public byte[] encryptNum(String account,String password,int encodeType,int workIndex) throws DataException{
 	if (TextUtils.isEmpty(password)){
 		Log.e(TAG, "password is null!");
 		return null;
@@ -190,10 +252,8 @@ public class PasswordHandler {
 		
 		if(aclen>=13){
 			newAcc = account.substring(aclen-13,aclen-1);
-		} else{
-			while (newAcc.length()<12) {
-				newAcc = "0"+newAcc;
-			}
+		} else if(aclen <12){
+			throw new DataException(-104);
 		}
 		
 	}
@@ -281,8 +341,12 @@ public class PasswordHandler {
 		
 	}
 
-	public void setEncodeType(int encodeType) {
+	public void setEncodeType(int encodeType) throws DataException {
+		if (encodeType==0 || encodeType == 1){
 		Setting.instance().setPasswordKeyboardMode(encodeType);
+		}else{
+			throw new DataException(-4, ",加密方式参数设置错误："+encodeType);
+		}
 		
 	}
 }

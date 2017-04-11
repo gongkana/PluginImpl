@@ -6,6 +6,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
+import com.nantian.pluginImpl.DataException;
+
 import android.annotation.SuppressLint;
 import android.app.ActivityManager;
 import android.content.Context;
@@ -189,13 +191,20 @@ public class DeviceInfo {
 	 * 固件版本号
 	 * 
 	 * @return
+	 * @throws DataException 
 	 */
-	public static String getLocalVersionCode(Context context)
-			throws NameNotFoundException {
+	public static String getLocalVersionCode(Context context) throws DataException
+			{
 		String version = null;
 		PackageManager manager = context.getPackageManager();
-		PackageInfo info = manager.getPackageInfo(context.getPackageName(), 0);
-		version = info.versionName;// 获取版本号
+		PackageInfo info;
+		try {
+			info = manager.getPackageInfo(context.getPackageName(), 0);
+			version = info.versionName;// 获取版本号
+		} catch (NameNotFoundException e) {
+			throw new DataException(-5);
+		}
+		
 		return version;
 	}
 

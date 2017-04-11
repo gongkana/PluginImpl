@@ -54,10 +54,10 @@ import android.widget.RelativeLayout.LayoutParams;
 import android.widget.TextView;
 import android.widget.ViewSwitcher.ViewFactory;
 
-public class PlayerFragment extends Fragment implements ViewFactory,
+public class PlayerFragment2 extends Fragment implements ViewFactory,
 		SurfaceHolder.Callback, OnTouchListener, OnGestureListener,
 		OnClickListener {
-	private static final String TAG = PlayerFragment.class.getSimpleName();
+	private static final String TAG = PlayerFragment2.class.getSimpleName();
 	/** 0-ªÏ∫œ£¨1-Õº∆¨£¨2£¨ ”∆µ */
 	private int type = -1;
 	private TextView tvTip;
@@ -84,7 +84,6 @@ public class PlayerFragment extends Fragment implements ViewFactory,
 	private DetailFile prePlayFile = null;
 
 	private boolean isPause = false;
-	
 	private boolean isUpdated = false;
 	// private RecommendPot pot;
 
@@ -168,7 +167,7 @@ public class PlayerFragment extends Fragment implements ViewFactory,
 	@Override
 	public void onStart() {
 		super.onStart();
-		PlayerCenter.instance().startWatch();
+
 		handler.removeMessages(VanHandler.PLAY_NEXT);
 		handler.sendEmptyMessageDelayed(VanHandler.START_PLAY, 300);
 	}
@@ -195,7 +194,6 @@ public class PlayerFragment extends Fragment implements ViewFactory,
 	@Override
 	public void onStop() {
 		super.onStop();
-		PlayerCenter.instance().stopWatch();
 		HLog.e(TAG, "onStop");
 		try {
 			if (mediaPlayer != null) {
@@ -353,16 +351,16 @@ public class PlayerFragment extends Fragment implements ViewFactory,
 		public static final int PLAY_NEXT = 1;
 		public static final int CLICK_ENABLED = 2;
 
-		private WeakReference<PlayerFragment> mOuter;
+		private WeakReference<PlayerFragment2> mOuter;
 
-		public VanHandler(PlayerFragment playerFragment) {
-			mOuter = new WeakReference<PlayerFragment>(playerFragment);
+		public VanHandler(PlayerFragment2 playerFragment) {
+			mOuter = new WeakReference<PlayerFragment2>(playerFragment);
 		}
 
 		@SuppressWarnings("static-access")
 		@Override
 		public void handleMessage(Message msg) {
-			PlayerFragment obj = mOuter.get();
+			PlayerFragment2 obj = mOuter.get();
 			if (null == obj) {
 				return;
 			}
@@ -453,11 +451,9 @@ public class PlayerFragment extends Fragment implements ViewFactory,
 		Log.e(TAG, "index=" + index);
 		if (index == -1 || preSize == 0) {
 			index = 0;
-			if (this.isResumed()){
 			handler.removeMessages(VanHandler.PLAY_NEXT);
 			handler.removeMessages(VanHandler.START_PLAY);
 			handler.sendEmptyMessageDelayed(VanHandler.START_PLAY, 100);
-			}
 		}
 
 	}

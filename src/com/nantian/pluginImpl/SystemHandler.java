@@ -29,6 +29,7 @@ import com.nantian.utils.HLog;
 import com.nantian.utils.Setting;
 import com.nantian.utils.Utils;
 import com.nantian.utils.VanRequest;
+import com.van.hid.TKeyPair;
 
 public class SystemHandler {
 
@@ -42,6 +43,7 @@ public class SystemHandler {
 	private double BatteryT; // µç³ØÎÂ¶È
 
 
+	
 	private Context mContext;
 
 	private boolean isInit;
@@ -179,7 +181,7 @@ public class SystemHandler {
 		return isSuccess;
 	}
 	
-	public JSONObject getFileInfo(String path) throws JSONException{
+	public JSONObject getFileInfo(String path) throws JSONException, DataException{
 		JSONObject json = new JSONObject();
 		File file = new File(path);
 		if (file.exists()){
@@ -206,7 +208,7 @@ public class SystemHandler {
 			}
 		}
 	};
-	public void getDeviceMes(JSONObject json) throws Exception {
+	public void getDeviceMes(JSONObject json) throws JSONException, DataException {
 		DisplayMetrics displayMetrics = mContext.getResources()
 				.getDisplayMetrics();
 		WindowManager wm = (WindowManager) mContext

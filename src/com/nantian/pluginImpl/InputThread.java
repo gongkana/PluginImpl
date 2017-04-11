@@ -31,7 +31,7 @@ public class InputThread extends Thread implements Runnable,OnClickListener{
 	
 	private int result = -2;
 	public InputThread(int timeout,int minLength,int maxLength,IData idata,boolean isAntoEnd,boolean isClean){
-		
+		HLog.e("thread...", "timeout ="+timeout+",minLength="+minLength+",maxLength:"+maxLength+",isAutoEnd="+isAntoEnd+",isClean="+isClean);
 		this.timeout = timeout;
 		this.minLength = minLength;
 		this.maxLength = maxLength;
@@ -122,8 +122,11 @@ public class InputThread extends Thread implements Runnable,OnClickListener{
 		//LogUtil.i(TAG, "pwd::" + mPwdBuilder.toString());
 		break;
 		case VanKeyboard.KEY_OK:// È·¶¨¼ü
+			HLog.e("", "pwd = "+pwd);
 		if (pwd.length() < minLength ){
-			VanKeyboard.instance().openKeyboard();
+			if (VanKeyboard.instance().requestOpenKeyboard()){
+				VanKeyboard.instance().openKeyboard();
+			}
 			return;
 		}
 		timeout = 0;
@@ -138,7 +141,7 @@ public class InputThread extends Thread implements Runnable,OnClickListener{
 		if (isClean){
 			pwd = "";
 		}else{
-			pwd = pwd.substring(0, pwd.length()-2);
+			pwd = pwd.substring(0, pwd.length()-1);
 		}
 		idata.notifyData(putJsonValue(pwd));
 		break;

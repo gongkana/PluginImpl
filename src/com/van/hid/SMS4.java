@@ -2,6 +2,8 @@ package com.van.hid;
 
 import java.util.Arrays;
 
+import com.nantian.pluginImpl.DataException;
+
 /**
  * http://blog.csdn.net/lemon_tree12138
  */
@@ -185,7 +187,7 @@ public class SMS4 {
     
     // --------------------- 以下为：对外接口 -----------------------------
     
-    public static byte[] encodeSMS4(String plaintext, byte[] key) {
+    public static byte[] encodeSMS4(String plaintext, byte[] key) throws DataException {
         if (plaintext == null || plaintext.equals("")) {
             return null;
         }
@@ -202,8 +204,12 @@ public class SMS4 {
      * @param plaintext
      * @param key
      * @return
+     * @throws DataException 
      */
-    public static byte[] encodeSMS4(byte[] plaintext, byte[] key) {
+    public static byte[] encodeSMS4(byte[] plaintext, byte[] key) throws DataException {
+    	if (null == key || key.length != 16){
+    		throw new DataException(-103);
+    	}
  		int len = plaintext.length;
 
 		byte[] bef = new byte[16];
@@ -233,9 +239,13 @@ public class SMS4 {
      * @param ciphertext
      * @param key
      * @return
+     * @throws DataException 
+     * @throws Exception 
      */
-    public static byte[] decodeSMS4(byte[] ciphertext, byte[] key) {
-    	
+    public static byte[] decodeSMS4(byte[] ciphertext, byte[] key) throws DataException  {
+    	if (key.length != 16){
+    		throw new DataException(-103);
+    	}
     	byte[] realkey = new byte[16];
     	int keylen = key.length>16 ?16:key.length;
     	System.arraycopy(key, 0, realkey, 0, keylen);
@@ -269,8 +279,9 @@ public class SMS4 {
      * @param ciphertext
      * @param key
      * @return
+     * @throws Exception 
      */
-    public static String decodeSMS4toString(byte[] ciphertext, byte[] key) {
+    public static String decodeSMS4toString(byte[] ciphertext, byte[] key) throws Exception {
         byte[] plaintext = new byte[ciphertext.length];
         plaintext = decodeSMS4(ciphertext, key);
         return new String(plaintext);

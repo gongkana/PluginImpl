@@ -15,6 +15,7 @@ import android.widget.FrameLayout.LayoutParams;
 
 import com.nantian.entity.SignBoardInfo;
 import com.nantian.entity.SignPDF;
+import com.nantian.pluginImpl.DataException;
 import com.nantian.sign.views.SignaturePad;
 import com.nantian.utils.HLog;
 import com.nantian.utils.Setting;
@@ -148,8 +149,8 @@ public class SignNameDialog extends Dialog {
 		HLog.e("", "dialog  dismis");
 	}
 	
-	public String saveSignPic() throws Exception{
-		File dir = new File(Environment.getExternalStorageDirectory()+File.separator+"Nantian/Temp","sign");
+	public String saveSignPic() throws DataException {
+		File dir = new File(Environment.getExternalStorageDirectory()+File.separator+"Nantian/Web/www/res/pdf");
 		if(!dir.exists()){
 			dir.mkdir();
 		}
@@ -162,9 +163,9 @@ public class SignNameDialog extends Dialog {
 
 
 	
-	public String sign (SignPDF signPdf,String pngPath) throws Exception{
+	public String sign (SignPDF signPdf,String pngPath) throws DataException{
 		if (signPdf != null){
-			PDFCenter.sign(pngPath, signPdf);
+			PDFCenter.sign(pngPath, signPdf,getTrack());
 			return signPdf.getPdfPath();
 		}
 		return "";

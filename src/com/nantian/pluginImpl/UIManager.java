@@ -1,5 +1,6 @@
 package com.nantian.pluginImpl;
 
+import java.io.File;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 
@@ -14,6 +15,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
@@ -24,6 +26,7 @@ import com.nantian.ad.PlayerFragment;
 import com.nantian.entity.SignBoardInfo;
 import com.nantian.entity.SignPDF;
 import com.nantian.plugininterface.IPlayer;
+import com.nantian.sign.PDFCenter;
 import com.nantian.sign.SignNameDialog;
 import com.nantian.utils.DeviceInfo;
 import com.nantian.utils.HLog;
@@ -264,7 +267,7 @@ public class UIManager implements IPlayer {
 		handler.sendMessage(msg);
 	}
 
-	public String saveBitmapAndSign(SignPDF signPDF) throws Exception {
+	public String saveBitmapAndSign(SignPDF signPDF) throws DataException{
 		// Message msg = Message.obtain();
 		// msg.what = SAVE_BITMAP_AND_SIGN;
 		// msg.obj = signPDF;
@@ -275,10 +278,13 @@ public class UIManager implements IPlayer {
 			pngPath = signDialog.saveSignPic();
 
 			signPDF.setReason(signDialog.getTrack());
+
 			signDialog.sign(signPDF, pngPath);
 			signDialog.dismiss();
 
 		}
+		//pngPath = Environment.getExternalStorageDirectory()+File.separator+"Nantian/Web/www/res/pdf/sign.png";
+		//PDFCenter.sign(pngPath, signPDF, "gongkan sign ...");
 		return pngPath;
 	}
 	public String getSignTrack(){
