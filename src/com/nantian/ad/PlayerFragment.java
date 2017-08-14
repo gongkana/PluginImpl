@@ -7,9 +7,15 @@ import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.WeakHashMap;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import com.nantian.ad.DetailFile.MediaType;
+import com.nantian.pluginImpl.Constans;
 import com.nantian.plugininterface.IPlayer;
 import com.nantian.utils.HLog;
 import com.nantian.utils.Setting;
@@ -32,6 +38,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.GestureDetector;
 import android.view.GestureDetector.OnGestureListener;
@@ -84,13 +91,14 @@ public class PlayerFragment extends Fragment implements ViewFactory,
 	private DetailFile prePlayFile = null;
 
 	private boolean isPause = false;
-	
+
 	private boolean isUpdated = false;
 	// private RecommendPot pot;
 
 	private Activity mActivity;
 
-	int [] ani;
+	int[] ani;
+
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container,
 			Bundle savedInstanceState) {
@@ -104,10 +112,15 @@ public class PlayerFragment extends Fragment implements ViewFactory,
 		surfaceView = new SurfaceView(mActivity);
 		surfaceView.setLayoutParams(ra);
 		surfaceView.setVisibility(View.GONE);
-		ani = new int []{getResources().getIdentifier("slide_in_left", "anim", mActivity.getPackageName()),
-				getResources().getIdentifier("slide_out_right", "anim", mActivity.getPackageName()),
-				getResources().getIdentifier("slide_in_right", "anim", mActivity.getPackageName()),
-				getResources().getIdentifier("slide_out_left", "anim", mActivity.getPackageName())};
+		ani = new int[] {
+				getResources().getIdentifier("slide_in_left", "anim",
+						mActivity.getPackageName()),
+				getResources().getIdentifier("slide_out_right", "anim",
+						mActivity.getPackageName()),
+				getResources().getIdentifier("slide_in_right", "anim",
+						mActivity.getPackageName()),
+				getResources().getIdentifier("slide_out_left", "anim",
+						mActivity.getPackageName()) };
 		relaView.addView(surfaceView);
 		imageSwitcher = new GallerySwitcher(mActivity);
 		LayoutParams ra2 = new LayoutParams(LayoutParams.MATCH_PARENT,
@@ -185,7 +198,7 @@ public class PlayerFragment extends Fragment implements ViewFactory,
 	}
 
 	public void setPlayTime(int time) {
-		HLog.e(TAG, "in time = "+time);
+		HLog.e(TAG, "in time = " + time);
 		GGTIME = time;
 		handler.removeMessages(VanHandler.PLAY_NEXT);
 		handler.removeMessages(VanHandler.START_PLAY);
@@ -265,7 +278,7 @@ public class PlayerFragment extends Fragment implements ViewFactory,
 					imageSwitcher.setInAnimation(AnimationUtils.loadAnimation(
 							getActivity(), ani[0]));
 					imageSwitcher.setOutAnimation(null);
-					HLog.e(TAG,"to right, pre type is vedio");
+					HLog.e(TAG, "to right, pre type is vedio");
 				} else {
 					imageSwitcher.setInAnimation(AnimationUtils.loadAnimation(
 							getActivity(), ani[0]));
@@ -278,7 +291,7 @@ public class PlayerFragment extends Fragment implements ViewFactory,
 					imageSwitcher.setInAnimation(AnimationUtils.loadAnimation(
 							getActivity(), ani[2]));
 					imageSwitcher.setOutAnimation(null);
-					HLog.e(TAG,"to left, pre type is vedio");
+					HLog.e(TAG, "to left, pre type is vedio");
 				} else {
 					imageSwitcher.setInAnimation(AnimationUtils.loadAnimation(
 							getActivity(), ani[2]));
@@ -323,7 +336,7 @@ public class PlayerFragment extends Fragment implements ViewFactory,
 						getView().getWidth(), getView().getHeight());
 				imageSwitcher.setImageFileAndDrawable(layoutParams, path,
 						drawable);
-			}else{
+			} else {
 				HLog.e(TAG, "drawable is null .......");
 			}
 			// imageSwitcher.setImageFile(mActity, path);
@@ -390,30 +403,79 @@ public class PlayerFragment extends Fragment implements ViewFactory,
 			}
 		}
 	}
+
+	private ArrayList<DetailFile> getAdFromJson() {
+		ArrayList<DetailFile> jsonFiles = new ArrayList<DetailFile>();
+
+		String jsonString = Utils.readFile(Environment
+				.getExternalStorageDirectory()
+				+ "/Nantian/Web/www/res/list.json");
+		HLog.e(TAG, jsonString);
+		if (!TextUtils.isEmpty(jsonString)) {
+			try {
+				JSONObject json = new JSONObject(jsonString);
+				Iterator iterator = json.keys();
+				while (iterator.hasNext()) {
+					String key = (String) iterator.next();
+					String rootdir = Environment.getExternalStorageDirectory()
+							+ Constans.Picture;
+					MediaType type = MediaType.TYPE_GG_PIC;
+					if ("video".equals(key)) {
+						type = MediaType.TYPE_VIDEO;
+						rootdir = Environment.getExternalStorageDirectory()
+								+ Constans.Video;
+					}
+
+					JSONArray jsonAry = json.getJSONArray(key);
+					HLog.e(TAG, "jsonAry :"+jsonAry.length());
+					for (int i = 0; i < jsonAry.length(); i++) {
+						String fileName = jsonAry.getString(i);
+						File adFile = new File(rootdir, fileName);
+						HLog.e(TAG, "key:"+key+",name:"+fileName);
+						if (adFile.exists()) {
+							jsonFiles.add(new DetailFile(fileName, type, adFile
+									.getAbsolutePath()));
+						}else{
+							HLog.e(TAG, "file is not exit,path = "+adFile
+									.getAbsolutePath());
+						}
+
+					}
+				}
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+
+		return jsonFiles;
+	}
+
 	public void setPalyerMode(int arg0) {
-		if (arg0 == this.type){
+		if (arg0 == this.type) {
 			return;
 		}
 		this.type = arg0;
 		this.index = 0;
 		playlist.clear();
-
-		switch (type) {
-		case 1:
-			playlist.addAll(getFileList(MediaType.TYPE_GG_PIC, "*.*"));
-			break;
-		case 2:
-			playlist.addAll(getFileList(MediaType.TYPE_VIDEO, "*.*"));
-			break;
-		case 0:
-			playlist.addAll(getFileList(MediaType.TYPE_GG_PIC, "*.*"));
-			playlist.addAll(getFileList(MediaType.TYPE_VIDEO, "*.*"));
-			break;
-		default:
-			break;
+		playlist.addAll(getAdFromJson());
+		if (playlist.isEmpty()) {
+			HLog.e(TAG, "json file is enpyty");
+			switch (type) {
+			case 1:
+				playlist.addAll(getFileList(MediaType.TYPE_GG_PIC, "*.*"));
+				break;
+			case 2:
+				playlist.addAll(getFileList(MediaType.TYPE_VIDEO, "*.*"));
+				break;
+			case 0:
+				playlist.addAll(getFileList(MediaType.TYPE_GG_PIC, "*.*"));
+				playlist.addAll(getFileList(MediaType.TYPE_VIDEO, "*.*"));
+				break;
+			default:
+				break;
+			}
 		}
-		Collections.sort(playlist, new SortFileByName());
-
 		if (this.isResumed()) {
 			handler.removeMessages(VanHandler.PLAY_NEXT);
 			handler.sendEmptyMessageDelayed(VanHandler.START_PLAY, 300);
@@ -431,32 +493,33 @@ public class PlayerFragment extends Fragment implements ViewFactory,
 			name = playlist.get(index);
 			playlist.clear();
 		}
+		playlist.addAll(getAdFromJson());
+		if (playlist.isEmpty()) {
+			switch (type) {
+			case 1:
+				playlist.addAll(getFileList(MediaType.TYPE_GG_PIC, "*.*"));
+				break;
+			case 2:
+				playlist.addAll(getFileList(MediaType.TYPE_VIDEO, "*.*"));
+				break;
+			case 0:
+				playlist.addAll(getFileList(MediaType.TYPE_GG_PIC, "*.*"));
+				playlist.addAll(getFileList(MediaType.TYPE_VIDEO, "*.*"));
+				break;
+			default:
+				break;
 
-		switch (type) {
-		case 1:
-			playlist.addAll(getFileList(MediaType.TYPE_GG_PIC, "*.*"));
-			break;
-		case 2:
-			playlist.addAll(getFileList(MediaType.TYPE_VIDEO, "*.*"));
-			break;
-		case 0:
-			playlist.addAll(getFileList(MediaType.TYPE_GG_PIC, "*.*"));
-			playlist.addAll(getFileList(MediaType.TYPE_VIDEO, "*.*"));
-			break;
-		default:
-			break;
-
+			}
 		}
 		prePlayFile = name;
-		Collections.sort(playlist, new SortFileByName());
 		index = playlist.indexOf(name);
 		Log.e(TAG, "index=" + index);
 		if (index == -1 || preSize == 0) {
 			index = 0;
-			if (this.isResumed()){
-			handler.removeMessages(VanHandler.PLAY_NEXT);
-			handler.removeMessages(VanHandler.START_PLAY);
-			handler.sendEmptyMessageDelayed(VanHandler.START_PLAY, 100);
+			if (this.isResumed()) {
+				handler.removeMessages(VanHandler.PLAY_NEXT);
+				handler.removeMessages(VanHandler.START_PLAY);
+				handler.sendEmptyMessageDelayed(VanHandler.START_PLAY, 100);
 			}
 		}
 
@@ -472,7 +535,9 @@ public class PlayerFragment extends Fragment implements ViewFactory,
 			if (names == null) {
 				return list;
 			}
+			
 			for (int i = 0; i < names.length; i++) {
+				HLog.e(TAG, "fileList name :"+names[i]);
 				list.add(new DetailFile(names[i], type, directory + names[i]));
 			}
 		} else {
@@ -522,7 +587,7 @@ public class PlayerFragment extends Fragment implements ViewFactory,
 				// mPrevView.setVisibility(View.VISIBLE);
 				// mNextView.setVisibility(View.VISIBLE);
 				playPicture(path, toRight);
-				HLog.e(TAG, "play picture ! path ="+path);
+				HLog.e(TAG, "play picture ! path =" + path);
 			} else {
 				if (prePlayFile == null
 						|| prePlayFile.getType() != MediaType.TYPE_VIDEO) {
@@ -614,7 +679,6 @@ public class PlayerFragment extends Fragment implements ViewFactory,
 		// getActivity().unregisterReceiver(broadcastRec);
 	}
 
-	
 	public ArrayList<String> getPlayList() {
 		// TODO Auto-generated method stub
 		return null;
@@ -625,13 +689,11 @@ public class PlayerFragment extends Fragment implements ViewFactory,
 
 	}
 
-
 	public void pause() {
 		isPause = true;
 		handler.removeMessages(VanHandler.PLAY_NEXT);
 
 	}
-
 
 	public void play(String arg0) {
 
@@ -643,12 +705,10 @@ public class PlayerFragment extends Fragment implements ViewFactory,
 
 	}
 
-
 	public void start() {
 		// TODO Auto-generated method stub
 
 	}
-
 
 	public void updataPlayerList() {
 		updatePlayList(type);
@@ -659,6 +719,5 @@ public class PlayerFragment extends Fragment implements ViewFactory,
 		// TODO Auto-generated method stub
 
 	}
-
 
 }

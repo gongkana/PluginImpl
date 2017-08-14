@@ -45,7 +45,7 @@ public class VanKeyboard implements Runnable{
 			HLog.e(TAG, "open begin..");
 			methods.put("open",clazz.getDeclaredMethod("open", String.class,String.class)) ; 
 			methods.put("close",clazz.getDeclaredMethod("close"));
-			methods.put("isOpen",clazz.getDeclaredMethod("close"));
+			methods.put("isOpen",clazz.getDeclaredMethod("isOpen"));			
 			methods.put("write",clazz.getDeclaredMethod("write",byte[].class,int.class));
 			methods.put("read",clazz.getDeclaredMethod("read",byte[].class,int.class,int.class,int.class));
 			open();

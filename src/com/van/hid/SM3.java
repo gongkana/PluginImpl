@@ -1,5 +1,7 @@
 package com.van.hid;
 
+import com.van.hid.Util;
+
 
 public class SM3 
 {

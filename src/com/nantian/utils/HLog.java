@@ -474,6 +474,14 @@ public final class HLog
         return Log.println(priority, tag, msg);
     }
 
+    
+    public static int printLog(int priority, String tag, String msg, Throwable tr){
+    	if (isNeedLog(priority)){
+    		writeFile(priority, tag, msg, tr);
+    		return println(priority, tag, msg + '\n' + getStackTraceString(tr));
+    	}
+    	return NO_LOG;
+    }
     /**
      * 将日志信息写入自定义的文件
      * @param priority 日志级别
@@ -543,6 +551,7 @@ public final class HLog
         return priority >= logLevel;
     }
 
+   
     /**
      * 获取非开发者模式的日志
      * @return

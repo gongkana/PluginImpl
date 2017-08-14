@@ -30,6 +30,7 @@ import com.van.hid.CertificateCenter;
 import com.van.hid.VanKeyboard;
 import com.van.hid.VanKeyboard.OnClickListener;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -45,7 +46,7 @@ public class PluginHandler implements IPluginInterface {
 
 	private Context mContext;
 
-	private UIManager uiManamger;
+	private UIManager uiManamger = UIManager.instance();
 
 	public PluginHandler() {
 
@@ -177,10 +178,6 @@ public class PluginHandler implements IPluginInterface {
 				signinfo.setSing_y(pa.optInt("pointY") - statusBarHeight1);
 				signinfo.setWidth(pa.optInt("width"));
 				signinfo.setHeigth(pa.optInt("height"));
-				if (null == uiManamger) {
-					uiManamger = new UIManager();
-					uiManamger.init(mContext);
-				}
 				uiManamger.showSignDialog(signinfo);
 			} else if ("dismissSign".equals(s)) {
 
@@ -241,6 +238,37 @@ public class PluginHandler implements IPluginInterface {
 					}
 
 				}
+			} else if ("digitalSeal".equals(s)) {
+				SignPDF signPDF = new SignPDF();
+				signPDF.setHeight(pa.optDouble("height"));
+				signPDF.setWidth(pa.optDouble("width"));
+				signPDF.setPointX(pa.optDouble("pointX"));
+				signPDF.setPointY(pa.optDouble("pointY"));
+				// signPDF.setHeight(100);
+				// signPDF.setWidth(500);
+				// signPDF.setPointX(0);
+				// signPDF.setPointY(400);
+				signPDF.setPageNum(pa.optInt("pageNum"));
+				String pdfName = pa.optString("signFilePath");
+				String markImagePath = Environment.getExternalStorageDirectory()+"/Nantian/"+pa.optString("sealPath");
+				String keypath = pa.optString("keyStore", "");
+				if (TextUtils.isEmpty(keypath)) {
+					keypath = Environment.getExternalStorageDirectory()
+							+ "/Nantian/Temp" + File.separator + "demo.p12";
+					signPDF.setPassword("123456");
+				} else {
+					keypath = Environment.getExternalStorageDirectory()
+							+ "/Nantian" + File.separator + keypath;
+					signPDF.setPassword(pa.optString("keyPassword"));
+				}
+				signPDF.setKeySorePath(keypath);
+				signPDF.setPdfPath(Environment
+						.getExternalStorageDirectory()
+						+ "/Nantian"
+						+ File.separator + pdfName);
+					
+				PDFCenter.sign(markImagePath, signPDF, null);
+
 
 			} else if ("clearSign".equals(s)) {
 				if (null != uiManamger) {
@@ -249,10 +277,6 @@ public class PluginHandler implements IPluginInterface {
 			} else if ("setSignDialogStyle".equals(s)) {
 				Log.e(TAG, "setSignDialogStyle");
 				int max = pa.optInt("pen_max");
-				if (null == uiManamger) {
-					uiManamger = new UIManager();
-					uiManamger.init(mContext);
-				}
 				;
 				if (max > 3) {
 					uiManamger.setDPenSize(max);
@@ -376,27 +400,16 @@ public class PluginHandler implements IPluginInterface {
 					Utils.delete(dir);
 				}
 			} else if ("playAD".equals(s)) {
-				if (null == uiManamger) {
-					uiManamger = new UIManager();
-					uiManamger.init(mContext);
-					HLog.e(TAG, ""+uiManamger);
-				}
-				;
 				uiManamger.playAD();
 			} else if ("pauseAD".equals(s)) {
-				if (null == uiManamger) {
-					uiManamger = new UIManager();
-					uiManamger.init(mContext);
-				}
-				;
 				uiManamger.pauseAD();
 			} else if ("getPluginName".equals(s)) {
 				json.put(
 						"data",
 						Setting.instance().getData(Setting.KEY_PLUGIN_NAME,
-								"paperlessPlugin.apk"));
+								Constans.PLUGIN_NAME));
 			} else if ("setPluginName".equals(s)) {
-				String data = pa.optString("pluginName", "paperlessPlugin.apk");
+				String data = pa.optString("pluginName", Constans.PLUGIN_NAME);
 				Setting.instance().saveData(Setting.KEY_PLUGIN_NAME, data);
 			} else if ("setAdTime".equals(s)) {
 				int time = pa.optInt("AdTime", 5);
@@ -430,6 +443,25 @@ public class PluginHandler implements IPluginInterface {
 				    byte[] out =PasswordHandler.instance().encodeByPublicKeyAndMode(big1, big2,StringUtil.hexStringToBytes(data));
 					json.put("msg", StringUtil.bytesToHexString(out));
 					
+			}else if ("pdfToImage".equals(s)){
+				String name = pa.optString("pdfName");
+				String pdfdir = Environment.getExternalStorageDirectory()+Constans.PDF;
+				JSONArray jsonAry = new JSONArray(PDFCenter.pdfToBitmap(pdfdir,name, pdfdir+"/image"));
+				json.put("msg", jsonAry);
+			}else if ("isKeyboardAva".equals(s)){
+				try {
+					json.put("msg", VanKeyboard.instance().isUartOpen());
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+					json.put("msg", "false");
+				}
+			}else if ("showLogView".equals(s)){
+				uiManamger.showLogView();
+			}else if ("dimissLogView".equals(s)){
+				if (uiManamger != null) {
+					uiManamger.dismissView();
+				}
 			} else {
 				json.put("result", "-1");
 				json.put("msg", "√ª”–÷∏¡Ó£∫" + s);
@@ -443,7 +475,7 @@ public class PluginHandler implements IPluginInterface {
 			try {
 				json.put("result", ""+e.getExceptionCode());
 				json.put("msg", e.getErrMsg());
-				HLog.e(TAG, e.getMessage());
+				HLog.e(TAG, e);
 				HLog.e(TAG, e.getErrMsg());
 			} catch (JSONException e1) {
 				// TODO Auto-generated catch block
@@ -492,7 +524,7 @@ public class PluginHandler implements IPluginInterface {
 
 	@Override
 	public String getVesion() {
-		return "1.0.0";
+		return "1.0.1";
 	}
 
 	@Override
@@ -502,12 +534,10 @@ public class PluginHandler implements IPluginInterface {
 
 	@Override
 	public void release() {
-		if (null != uiManamger) {
-			Log.e(TAG, "dismis ...");
+
 			uiManamger.release(null);
 			uiManamger.dimissDialog();
-			uiManamger = null;
-		}
+
 		VanKeyboard.instance().release();
 		SystemHandler.instance().destory();
 		
@@ -526,6 +556,7 @@ public class PluginHandler implements IPluginInterface {
 			HLog.e(TAG, "activity");
 		}
 		this.mContext = context;
+		uiManamger.init(context);
 		VanKeyboard.instance();
 		Setting.instance().setContext(context);
 		SystemHandler.instance().init(context);
@@ -533,17 +564,13 @@ public class PluginHandler implements IPluginInterface {
 
 	@Override
 	public IPlayer getPlayer() {
-		HLog.e(TAG, "get Player");
-		if (uiManamger == null) {
-			uiManamger = new UIManager();
-			HLog.e(TAG, ""+uiManamger);
-			
-		}
-		if (!uiManamger.isInit){
-			HLog.e(TAG, "init Player");
-			uiManamger.init(mContext);
-		}
+
 		return uiManamger;
+	}
+
+	@Override
+	public int printLog(int levl, String tag, String msg, Throwable tr) {
+		return HLog.printLog(levl, tag, msg, tr);
 	}
 
 }

@@ -3,6 +3,7 @@ package com.van.hid;
 import java.util.Arrays;
 
 import com.nantian.pluginImpl.DataException;
+import com.nantian.utils.HLog;
 
 /**
  * http://blog.csdn.net/lemon_tree12138
@@ -208,7 +209,8 @@ public class SMS4 {
      */
     public static byte[] encodeSMS4(byte[] plaintext, byte[] key) throws DataException {
     	if (null == key || key.length != 16){
-    		throw new DataException(-103);
+  
+    		throw new DataException(-103,"π˙√‹√‹‘ø≤ª∂‘");
     	}
  		int len = plaintext.length;
 

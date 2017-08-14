@@ -19,6 +19,7 @@ import java.security.NoSuchAlgorithmException;
 import org.bouncycastle.util.encoders.Base64Encoder;
 
 import com.nantian.ad.DetailFile.MediaType;
+import com.nantian.pluginImpl.Constans;
 import com.nantian.pluginImpl.DataException;
 
 import android.content.Context;
@@ -238,10 +239,10 @@ public class Utils {
 	}
 	
 	public static String getMediaTypeDir(MediaType type){
-		String path = Environment.getExternalStorageDirectory()+"/Nantian/Web/www/res/image";
+		String path = Environment.getExternalStorageDirectory()+Constans.Picture;
 		switch (type) {
 		case TYPE_VIDEO:
-			path = Environment.getExternalStorageDirectory()+"/Nantian/Web/www/res/video";
+			path = Environment.getExternalStorageDirectory()+Constans.Video;
 			break;
 
 		default:
@@ -287,6 +288,7 @@ public class Utils {
 				@Override
 				public boolean accept(File dir, String filename) {
 					File file = new File(getMediaTypeDir(type) + File.separator + filename);
+					HLog.e("", dir.getAbsolutePath()+",fileName ="+filename);
 					if (filename.toLowerCase().matches(".*(.mp4|.mpg|.avi|.wmv)$")) {
 						return file.isFile();
 					}
@@ -318,5 +320,31 @@ public class Utils {
 		}
 
 		return files;
+	}
+	
+	public static String readFile(String path){
+		BufferedReader reader = null;
+		String laststr = "";
+		try{
+			FileInputStream fileInputStream = new FileInputStream(path);
+			InputStreamReader inputStreamReader = new InputStreamReader(fileInputStream, "UTF-8");
+			reader = new BufferedReader(inputStreamReader);
+			String tempString = null;
+			while((tempString = reader.readLine()) != null){
+				laststr += tempString;
+			}
+			reader.close();
+		}catch(IOException e){
+			e.printStackTrace();
+		}finally{
+			if(reader != null){
+				try {
+					reader.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		return laststr;
 	}
 }

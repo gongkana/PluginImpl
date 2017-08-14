@@ -7,7 +7,9 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.RandomAccessFile;
 import java.net.MalformedURLException;
+import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
@@ -18,10 +20,18 @@ import java.security.Security;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+
+import android.graphics.Bitmap;
+import android.graphics.pdf.PdfRenderer;
+import android.graphics.pdf.PdfRenderer.Page;
+import android.os.Environment;
+import android.os.ParcelFileDescriptor;
 
 import com.itextpdf.awt.geom.Rectangle2D;
 import com.itextpdf.text.BadElementException;
@@ -52,6 +62,8 @@ import com.itextpdf.tool.xml.XMLWorkerHelper;
 import com.nantian.entity.SignPDF;
 import com.nantian.pluginImpl.DataException;
 import com.nantian.utils.HLog;
+import com.nantian.utils.Utils;
+
 
 public class PDFCenter {
 
@@ -174,9 +186,11 @@ public class PDFCenter {
 			String tempPath = signInfo.getPdfPath().replace(".", "_new.");
 			FileOutputStream os = new FileOutputStream(tempPath);
 			PdfStamper stamper = PdfStamper.createSignature(reader, os, '\0');
-			Map<String, String> signTrackMap = new HashMap<String, String>();
-			signTrackMap.put("signTrack", signTrack);
-			stamper.setMoreInfo(signTrackMap); 
+			if (null != signTrack && !signTrack.equals("")){
+				Map<String, String> signTrackMap = new HashMap<String, String>();
+				signTrackMap.put("signTrack", signTrack);
+				stamper.setMoreInfo(signTrackMap);
+			}
 			// Creating the appearance
 			PdfSignatureAppearance appearance = stamper.getSignatureAppearance();
       // appearance.setReason(signInfo.getReason());
@@ -216,7 +230,7 @@ public class PDFCenter {
 							(float) start[0],
 							(float) (start[1]-height),
 							(float) (start[0]+width),
-							(float) (start[1])),signInfo.getPageNum(),"Signature1");
+							(float) (start[1])),signInfo.getPageNum(),appearance.getNewSigName());
 			// Custom text and background image
 			appearance.setLayer2Text("");
 			appearance.setImage(img);
@@ -227,7 +241,7 @@ public class PDFCenter {
 				appearance.setImageScale(scal);
 			}
 			// Creating the signature 后
-			PrivateKeySignature pks = new PrivateKeySignature(pk, DigestAlgorithms.SHA256, provider.getName());
+			PrivateKeySignature pks = new PrivateKeySignature(pk, "SM3", provider.getName());
 			ExternalDigest digest = new BouncyCastleDigest();
 			MakeSignature.signDetached(appearance, digest, pks, chain, null, null, null, 0, MakeSignature.CryptoStandard.CMS);
 			//File srcFile = new File(signInfo.getPdfPath());
@@ -256,6 +270,121 @@ public class PDFCenter {
 			throw new DataException(-5,e);
 		}
     }
+    /**
+    public static void pdfToImage1(String pdfdir,String pdfName,String outDir) throws DataException{
+    	
+    	File pdfFile = new File(pdfdir, pdfName);
+    	 RandomAccessFile raf = null;
+		FileChannel channel = null;
+		try {
+			raf = new RandomAccessFile(pdfFile, "r");
+			 
+			 channel = raf.getChannel();
+
+			 ByteBuffer bb = ByteBuffer.NEW(channel.map(FileChannel.MapMode.READ_ONLY, 0, channel.size()));
+			 // create a PDFFile from the data
+
+			 PDFFile mCurrentOpenPdfFile = new PDFFile(bb);
+			 
+			 int pageSize = mCurrentOpenPdfFile.getNumPages();
+			 for (int i = 0; i < pageSize; i++) {
+					PDFPage mPdfPage = mCurrentOpenPdfFile.getPage(i+1, true);
+					
+			        int wi = (int) mPdfPage.getWidth();
+			        int hei = (int) mPdfPage.getHeight();		        
+			        Bitmap bitmap = mPdfPage.getImage( wi, hei, null, true, true);
+					File outdir = new File(outDir);
+					if (!outdir.exists()){
+						outdir.mkdirs();
+					}
+					Utils.savaBitmap(outdir, (i+1)+".png", bitmap);
+			        
+			}
+			 
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}finally{
+	         try {
+				raf.close();
+				channel.close();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+
+         
+
+    }
+    */
+    public static ArrayList<String> pdfToBitmap(String pdfdir,String pdfName,String outDir) throws DataException {
+		
+			
+			File pdfCopy = new File(pdfdir,pdfName);
+			ParcelFileDescriptor parcelFileDescriptor = null;
+			if (pdfCopy.exists()) {
+				try {
+					parcelFileDescriptor = ParcelFileDescriptor.open(pdfCopy,
+							ParcelFileDescriptor.MODE_READ_ONLY);
+				} catch (FileNotFoundException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+					throw new DataException(-5, e);
+				}
+			
+			}else {
+				throw new DataException(-3, "文件不存在");
+			}
+			
+			@SuppressWarnings("resource")
+			PdfRenderer reader = null;
+			try {
+				reader = new PdfRenderer(parcelFileDescriptor);
+			int count = reader.getPageCount();
+			ArrayList<String> fileList = new ArrayList<String>();
+			for (int i = 0; i < count; i++) {
+				Page page = reader.openPage(i);
+				try {
+				Bitmap bitmap = Bitmap.createBitmap(page.getWidth(),
+						page.getHeight(), Bitmap.Config.ARGB_8888);
+				   page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);  
+				
+					File outdir = new File(outDir);
+					Utils.delete(outdir);
+					if (!outdir.exists()){
+						outdir.mkdirs();
+					}
+					Utils.savaBitmap(outdir, i+".png", bitmap);
+					fileList.add(i+".png");
+				} catch (Exception e) {
+					e.printStackTrace();
+					throw new DataException(-5, e);
+				}finally{
+					HLog.e("", "page close");
+					page.close();
+				}
+			}
+			return fileList;
+
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			throw new DataException(-5, e);
+		}finally{
+			reader.close();
+			try {
+				parcelFileDescriptor.close();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+			
+	}
     
     private static float[] getKeyWords(PdfReader pdfReader,int num) {
         final float[] resu = new float[2];

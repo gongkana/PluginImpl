@@ -55,8 +55,10 @@ public class SystemHandler {
 	public void init(Context context) {
 
 		this.mContext = context;
-		mContext.registerReceiver(mBroadcastReceiver, new IntentFilter(
-				Intent.ACTION_BATTERY_CHANGED));
+		IntentFilter intentFilter = new IntentFilter();
+		intentFilter.addAction(Intent.ACTION_BATTERY_CHANGED);
+		intentFilter.addAction(Constans.ACTION_REFRESH_AD);
+		mContext.registerReceiver(mBroadcastReceiver, intentFilter);
 	}
 
 	public void destory(){
@@ -205,6 +207,12 @@ public class SystemHandler {
 			if (Intent.ACTION_BATTERY_CHANGED.equals(action)) {
 				BatteryV = intent.getIntExtra("voltage", 0); // 电池电压
 				BatteryT = intent.getIntExtra("temperature", 0); // 电池温度
+			}else if (Constans.ACTION_REFRESH_AD.endsWith(action)){
+				String folder = "Nantian"+File.separator+intent.getStringExtra("Folder");
+				HLog.e("","broadcast = "+folder);
+				if (Constans.Picture.equals(folder)||Constans.Video.equals(folder)){
+					UIManager.instance().updataPlayerList();
+				}
 			}
 		}
 	};

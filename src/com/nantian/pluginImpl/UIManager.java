@@ -20,8 +20,10 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.WindowManager;
 
+import com.nantian.ad.LogDialog;
 import com.nantian.ad.PlayerFragment;
 import com.nantian.entity.SignBoardInfo;
 import com.nantian.entity.SignPDF;
@@ -61,12 +63,21 @@ public class UIManager implements IPlayer {
 	private static final int SET_AD_TIME = 1100;
 	
 	private static final int GET_PLAYER = 1200;
+	
+	private static final int SHOW_LOG_WINDOW = 1300;
+	
+	private static final int DISMSS_LOG_WINDOW = 1400;
+	
 	private Context mContext;
 
 	private static UIManager instanse;
+	
 	private PlayerFragment player;
 	
+	private LogDialog logDialog;
+	
 	public boolean isInit;
+	
 	public Context getmContext() {
 		return mContext;
 	}
@@ -75,11 +86,8 @@ public class UIManager implements IPlayer {
 		
 		return this;
 	}
-	public void init(Context context) {
-		if(isInit){
-			return;
-		}
-		this.mContext = context;
+	
+	private UIManager(){
 		handler = new Handler(Looper.getMainLooper()) {
 			@Override
 			public void dispatchMessage(Message msg) {
@@ -188,15 +196,35 @@ public class UIManager implements IPlayer {
 					if (player == null){
 						player =  new PlayerFragment();
 					}
+						break;
+				case SHOW_LOG_WINDOW:
+					if (logDialog == null){
+						logDialog =  new LogDialog(mContext);
+					}
+					logDialog.show();
+					break;
+				case DISMSS_LOG_WINDOW:
+					if (logDialog != null){
+						logDialog.dismiss();
+					}
+					break;
 				default:
-					
 					break;
 				}
 			}
 		};
-
 		handler.sendEmptyMessage(GET_PLAYER);
-		isInit = true;
+		
+	}
+	
+	public static UIManager instance(){
+		if (instanse == null){
+			instanse = new UIManager();
+		}
+		return instanse;
+	}
+	public  void init(Context context) {
+		mContext = context;		
 	}
 	
 
@@ -222,6 +250,17 @@ public class UIManager implements IPlayer {
 
 	}
 
+	public void showLogView(){
+		Message msg = Message.obtain();
+		msg.what = SHOW_LOG_WINDOW;
+		handler.sendMessage(msg);
+	}
+	
+	public void dismissView(){
+		Message msg = Message.obtain();
+		msg.what = DISMSS_LOG_WINDOW;
+		handler.sendMessage(msg);
+	}
 	public void setDialogBgColor(String color) throws Exception {
 		int c = Color.parseColor(color);
 		Message msg = Message.obtain();
